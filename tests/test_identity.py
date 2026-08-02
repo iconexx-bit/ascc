@@ -96,9 +96,7 @@ def test_security_group_generated_id_does_not_collapse() -> None:
 
 def test_unknown_terraform_type_returns_none() -> None:
     resolution = resolve(
-        ResourceRef(
-            scheme=RefScheme.TERRAFORM, value="aws_lambda_function.foo", scanner="checkov"
-        )
+        ResourceRef(scheme=RefScheme.TERRAFORM, value="aws_lambda_function.foo", scanner="checkov")
     )
     assert resolution is None
 
