@@ -29,7 +29,8 @@ class TrivyParser(ScannerParser):
     def scanner_name(self) -> str:
         return "trivy"
 
-    def parse(self, path: Path) -> ScanRun:
+    def parse(self, path: str | Path) -> ScanRun:
+        path = Path(path)
         data = json.loads(path.read_text())
         host = self._resolve_host(data)
         resources: dict[str, Resource] = {}

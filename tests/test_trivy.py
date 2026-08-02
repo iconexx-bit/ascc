@@ -98,3 +98,9 @@ def test_bucket_resource_resolution_method(scan_run: ScanRun) -> None:
 
 def test_trivy_resources_have_no_tags(scan_run: ScanRun) -> None:
     assert all(resource.tags == {} for resource in scan_run.resources.values())
+
+
+def test_parse_accepts_str_path(fixtures_dir: Path, scan_run: ScanRun) -> None:
+    str_run = TrivyParser().parse(str(fixtures_dir / "trivy.json"))
+    assert len(str_run.findings) == len(scan_run.findings)
+    assert set(str_run.resources) == set(scan_run.resources)

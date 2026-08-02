@@ -62,3 +62,9 @@ def test_repeated_resource_merges_refs(scan_run: ScanRun) -> None:
     """
     bucket = scan_run.resources["aws:s3:bucket:datalake-raw"]
     assert len(bucket.refs) == 3
+
+
+def test_parse_accepts_str_path(fixtures_dir: Path, scan_run: ScanRun) -> None:
+    str_run = ProwlerParser().parse(str(fixtures_dir / "prowler.json"))
+    assert len(str_run.findings) == len(scan_run.findings)
+    assert set(str_run.resources) == set(scan_run.resources)

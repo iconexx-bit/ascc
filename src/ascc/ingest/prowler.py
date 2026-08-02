@@ -33,7 +33,8 @@ class ProwlerParser(ScannerParser):
     def scanner_name(self) -> str:
         return "prowler"
 
-    def parse(self, path: Path) -> ScanRun:
+    def parse(self, path: str | Path) -> ScanRun:
+        path = Path(path)
         entries = json.loads(path.read_text())
         started_at = min(_parse_timestamp(e["finding_info"]["created_time"]) for e in entries)
         resources: dict[str, Resource] = {}
