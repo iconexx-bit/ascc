@@ -15,3 +15,7 @@ class ScannerParser(ABC):
 
     @abstractmethod
     def parse(self, path: str | Path) -> ScanRun: ...
+
+    @classmethod
+    @abstractmethod
+    def sniff(cls, data: dict | list) -> bool: ...

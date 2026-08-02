@@ -29,6 +29,10 @@ class TrivyParser(ScannerParser):
     def scanner_name(self) -> str:
         return "trivy"
 
+    @classmethod
+    def sniff(cls, data: dict | list) -> bool:
+        return isinstance(data, dict) and "Results" in data and "ArtifactType" in data
+
     def parse(self, path: str | Path) -> ScanRun:
         path = Path(path)
         data = json.loads(path.read_text())

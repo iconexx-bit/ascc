@@ -40,6 +40,16 @@ class ProwlerParser(ScannerParser):
     def scanner_name(self) -> str:
         return "prowler"
 
+    @classmethod
+    def sniff(cls, data: dict | list) -> bool:
+        return (
+            isinstance(data, list)
+            and bool(data)
+            and isinstance(data[0], dict)
+            and "finding_info" in data[0]
+            and "status_code" in data[0]
+        )
+
     def parse(self, path: str | Path) -> ScanRun:
         path = Path(path)
         entries = json.loads(path.read_text())
