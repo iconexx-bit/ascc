@@ -1,8 +1,10 @@
 """Identity resolution. Ядро дифференциации ASCC."""
+
 from __future__ import annotations
+
+import re
 from dataclasses import dataclass
 from enum import StrEnum
-import re
 
 
 class RefScheme(StrEnum):
@@ -13,14 +15,14 @@ class RefScheme(StrEnum):
 
 
 class IdentityClass(StrEnum):
-    NATURAL_NAME = "natural_name"   # имя ресурса совпадает с идентификатором в ARN
-    GENERATED_ID = "generated_id"   # cloud-ID не выводится из имени
+    NATURAL_NAME = "natural_name"  # имя ресурса совпадает с идентификатором в ARN
+    GENERATED_ID = "generated_id"  # cloud-ID не выводится из имени
 
 
 TF_TYPE_MAP: dict[str, tuple[str, str, IdentityClass]] = {
-    "aws_s3_bucket":      ("s3",  "bucket",         IdentityClass.NATURAL_NAME),
-    "aws_iam_role":       ("iam", "role",           IdentityClass.NATURAL_NAME),
-    "aws_instance":       ("ec2", "instance",       IdentityClass.GENERATED_ID),
+    "aws_s3_bucket": ("s3", "bucket", IdentityClass.NATURAL_NAME),
+    "aws_iam_role": ("iam", "role", IdentityClass.NATURAL_NAME),
+    "aws_instance": ("ec2", "instance", IdentityClass.GENERATED_ID),
     "aws_security_group": ("ec2", "security-group", IdentityClass.GENERATED_ID),
 }
 
@@ -33,6 +35,7 @@ ARN_RE = re.compile(
 @dataclass(frozen=True, slots=True)
 class ResourceRef:
     """Как конкретный сканер назвал ресурс. Сырое, без нормализации."""
+
     scheme: RefScheme
     value: str
     scanner: str
@@ -41,6 +44,7 @@ class ResourceRef:
 @dataclass(frozen=True, slots=True)
 class MatchKey:
     """Канонический ключ: aws:s3:bucket:datalake-raw"""
+
     partition: str
     service: str
     resource_type: str
@@ -54,6 +58,7 @@ class MatchKey:
 class Resolution:
     """Результат резолва плюс провенанс. Не выбрасывай method и confidence:
     без них нельзя объяснить, почему два finding слиты."""
+
     key: MatchKey
     confidence: float
     method: str
@@ -69,6 +74,8 @@ def resolve(ref: ResourceRef) -> Resolution | None:
         return _from_arn(ref.value)
     if ref.scheme is RefScheme.TERRAFORM:
         return _from_terraform(ref.value)
+    if ref.scheme is RefScheme.NAME:
+        return _from_name(ref.value)
     return None
 
 
@@ -83,8 +90,7 @@ def _from_arn(arn: str) -> Resolution | None:
         rtype = {"s3": "bucket"}.get(m["service"], "resource")
         ident = tail
     return Resolution(
-        key=MatchKey(m["partition"] or "aws", m["service"], rtype,
-                     _normalize_identifier(ident)),
+        key=MatchKey(m["partition"] or "aws", m["service"], rtype, _normalize_identifier(ident)),
         confidence=1.0,
         method="arn_parse",
         identity_class=IdentityClass.NATURAL_NAME,
@@ -107,3 +113,21 @@ def _from_terraform(address: str) -> Resolution | None:
     # generated-id: без мостового факта (тег Name, terraform state)
     # этот ключ НЕ схлопнется с ARN. Низкая уверенность — сигнал для correlate/.
     return Resolution(key, 0.4, "terraform_generated_id_unbridged", ident_class)
+
+
+def _from_name(name: str) -> Resolution | None:
+    """NAME безусловно резолвится в aws:ec2:instance — это эвристика,
+    валидная только для filesystem-сканов хоста (имя хоста ~ имя инстанса),
+    а не установленный факт о схеме NAME в общем случае. Если появится
+    другой источник RefScheme.NAME (не filesystem-скан), эту функцию
+    нужно будет параметризовать по типу ресурса, а не расширять список
+    сервисов внутри неё."""
+    ident = _normalize_identifier(name)
+    if not ident:
+        return None
+    return Resolution(
+        key=MatchKey("aws", "ec2", "instance", ident),
+        confidence=0.5,
+        method="filesystem_path_heuristic",
+        identity_class=IdentityClass.GENERATED_ID,
+    )
