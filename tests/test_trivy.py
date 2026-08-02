@@ -104,3 +104,7 @@ def test_parse_accepts_str_path(fixtures_dir: Path, scan_run: ScanRun) -> None:
     str_run = TrivyParser().parse(str(fixtures_dir / "trivy.json"))
     assert len(str_run.findings) == len(scan_run.findings)
     assert set(str_run.resources) == set(scan_run.resources)
+
+
+def test_trivy_yields_no_bridge_facts(scan_run: ScanRun) -> None:
+    assert scan_run.bridge_facts == []

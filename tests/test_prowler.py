@@ -68,3 +68,20 @@ def test_parse_accepts_str_path(fixtures_dir: Path, scan_run: ScanRun) -> None:
     str_run = ProwlerParser().parse(str(fixtures_dir / "prowler.json"))
     assert len(str_run.findings) == len(scan_run.findings)
     assert set(str_run.resources) == set(scan_run.resources)
+
+
+def test_prowler_bridges_exactly_ec2_and_security_group(scan_run: ScanRun) -> None:
+    pairs = {frozenset((str(f.left), str(f.right))) for f in scan_run.bridge_facts}
+    assert pairs == {
+        frozenset(("aws:ec2:instance:datalake-etl", "aws:ec2:instance:i-0a1b2c3d4e5f67890")),
+        frozenset(
+            (
+                "aws:ec2:security-group:datalake-etl-sg",
+                "aws:ec2:security-group:sg-0f9e8d7c6b5a43210",
+            )
+        ),
+    }
+
+
+def test_bridge_fact_evidence_names_the_observation(scan_run: ScanRun) -> None:
+    assert all("arn:aws:" in f.evidence and "name=" in f.evidence for f in scan_run.bridge_facts)

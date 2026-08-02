@@ -27,6 +27,29 @@ class Resource:
         return {r.scanner for r in self.refs}
 
 
+@dataclass(frozen=True, slots=True)
+class BridgeFact:
+    """Свидетельство одного сканера, что два ключа обозначают один ресурс.
+
+    Пара (left, right) не упорядочена по смыслу — нормализуется здесь,
+    в __post_init__, а не через кастомный __eq__/__hash__.
+    """
+
+    left: MatchKey
+    right: MatchKey
+    method: str
+    confidence: float
+    source: str
+    evidence: str
+
+    def __post_init__(self) -> None:
+        a, b = self.left, self.right
+        if str(b) < str(a):
+            a, b = b, a
+        object.__setattr__(self, "left", a)
+        object.__setattr__(self, "right", b)
+
+
 @dataclass(slots=True)
 class Finding:
     """Сырая находка одного сканера, привязанная к одному или нескольким ресурсам."""
@@ -58,3 +81,4 @@ class ScanRun:
     started_at: datetime
     findings: list[Finding] = field(default_factory=list)
     resources: dict[str, Resource] = field(default_factory=dict)
+    bridge_facts: list[BridgeFact] = field(default_factory=list)
