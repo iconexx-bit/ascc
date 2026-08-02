@@ -63,3 +63,38 @@ def test_sg_misconfig_confidence_is_low(scan_run) -> None:
     finding = next(f for f in scan_run.findings if f.rule_id == "AVD-AWS-0107")
     assert finding.min_confidence == 0.4
     assert finding.resolutions[0].method == "terraform_generated_id_unbridged"
+
+
+def test_resources_count_matches_fixture(scan_run: ScanRun) -> None:
+    assert len(scan_run.resources) == 3
+
+
+def test_repeated_host_resource_merges_refs(scan_run: ScanRun) -> None:
+    """Хост встречается в 4 находках (по одной на CVE) с одним и тем же ref.
+
+    Если реализация при повторной встрече ресурса перезаписывает Resource
+    целиком вместо слияния, test_resources_count_matches_fixture всё равно
+    даст len == 3 (ключ один и тот же) — эта регрессия молча пройдёт мимо
+    него. Только счётчик refs ловит потерю накопления.
+    """
+    host = scan_run.resources["aws:ec2:instance:datalake-etl"]
+    assert len(host.refs) == 4
+
+
+def test_resource_keys_match_finding_resource_ids(scan_run: ScanRun) -> None:
+    finding_resource_ids = {rid for f in scan_run.findings for rid in f.resource_ids}
+    assert set(scan_run.resources) == finding_resource_ids
+
+
+def test_bucket_resource_resolution_confidence(scan_run: ScanRun) -> None:
+    bucket = scan_run.resources["aws:s3:bucket:datalake-raw"]
+    assert bucket.resolutions[0].confidence == 1.0
+
+
+def test_bucket_resource_resolution_method(scan_run: ScanRun) -> None:
+    bucket = scan_run.resources["aws:s3:bucket:datalake-raw"]
+    assert bucket.resolutions[0].method == "terraform_natural_name"
+
+
+def test_trivy_resources_have_no_tags(scan_run: ScanRun) -> None:
+    assert all(resource.tags == {} for resource in scan_run.resources.values())
