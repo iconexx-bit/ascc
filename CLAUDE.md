@@ -147,3 +147,12 @@ B→C (0.95, observed_together). The reader judges the chain.
 
 Two people each confidently know an Ivanov. It does not follow that they
 know the same Ivanov.
+
+### Disagreement is data, not an error
+
+Disagreement between scanners is data, not an error. When two
+scanners report different values for the same tag, correlate()
+picks a deterministic winner for display and records the
+disagreement in tag_conflicts. Drift between IaC and live cloud
+is exactly what this layer exists to surface — crashing on it
+would throw away the finding.

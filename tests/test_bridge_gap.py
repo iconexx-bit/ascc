@@ -1,6 +1,10 @@
-"""Baseline of the pre-bridge state. These tests are expected to FAIL the
-day IdentityBridge lands: that is the plan, not a regression. Update
-them together with the bridge, never "fix" them in isolation.
+"""Post-bridge state. IdentityBridge is wired into correlate() now: the
+EC2 instance and security group keys that used to be two disjoint,
+unbridged identifiers per resource now share a cluster with a direct
+bridge fact. The bucket and IAM role were never a gap — they already
+collapsed to the same key by construction, and the bridge changes
+nothing about them. Update these tests together with correlate(),
+never independently of what it actually does.
 """
 
 from __future__ import annotations
@@ -10,8 +14,10 @@ from pathlib import Path
 
 import pytest
 
+from ascc.correlate.run import CorrelationRun, correlate
 from ascc.ingest.prowler import ProwlerParser
 from ascc.ingest.trivy import TrivyParser
+from ascc.schema.identity import MatchKey
 from ascc.schema.models import ScanRun
 
 
@@ -25,20 +31,31 @@ def prowler_run(fixtures_dir: Path) -> ScanRun:
     return ProwlerParser().parse(fixtures_dir / "prowler.json")
 
 
-def test_ec2_instance_has_two_unbridged_keys(trivy_run: ScanRun, prowler_run: ScanRun) -> None:
-    trivy_ec2 = {k for k in trivy_run.resources if k.startswith("aws:ec2:instance:")}
-    prowler_ec2 = {k for k in prowler_run.resources if k.startswith("aws:ec2:instance:")}
-    assert trivy_ec2 == {"aws:ec2:instance:datalake-etl"}
-    assert prowler_ec2 == {"aws:ec2:instance:i-0a1b2c3d4e5f67890"}
-    assert trivy_ec2.isdisjoint(prowler_ec2)
+@pytest.fixture(scope="module")
+def correlation_run(trivy_run: ScanRun, prowler_run: ScanRun) -> CorrelationRun:
+    return correlate([trivy_run, prowler_run])
 
 
-def test_security_group_has_two_unbridged_keys(trivy_run: ScanRun, prowler_run: ScanRun) -> None:
-    trivy_sg = {k for k in trivy_run.resources if k.startswith("aws:ec2:security-group:")}
-    prowler_sg = {k for k in prowler_run.resources if k.startswith("aws:ec2:security-group:")}
-    assert trivy_sg == {"aws:ec2:security-group:datalake-etl-sg"}
-    assert prowler_sg == {"aws:ec2:security-group:sg-0f9e8d7c6b5a43210"}
-    assert trivy_sg.isdisjoint(prowler_sg)
+def test_ec2_instance_keys_share_one_cluster(correlation_run: CorrelationRun) -> None:
+    trivy_key = MatchKey("aws", "ec2", "instance", "datalake-etl")
+    prowler_key = MatchKey("aws", "ec2", "instance", "i-0a1b2c3d4e5f67890")
+    cluster = next(c for c in correlation_run.clusters if trivy_key in c.keys)
+    assert prowler_key in cluster.keys
+    path = cluster.path(trivy_key, prowler_key)
+    assert path is not None
+    assert len(path) == 1
+    assert cluster.direct_confidence(trivy_key, prowler_key) == 0.95
+
+
+def test_security_group_keys_share_one_cluster(correlation_run: CorrelationRun) -> None:
+    trivy_key = MatchKey("aws", "ec2", "security-group", "datalake-etl-sg")
+    prowler_key = MatchKey("aws", "ec2", "security-group", "sg-0f9e8d7c6b5a43210")
+    cluster = next(c for c in correlation_run.clusters if trivy_key in c.keys)
+    assert prowler_key in cluster.keys
+    path = cluster.path(trivy_key, prowler_key)
+    assert path is not None
+    assert len(path) == 1
+    assert cluster.direct_confidence(trivy_key, prowler_key) == 0.95
 
 
 def test_bucket_collapses_across_scanners(trivy_run: ScanRun, prowler_run: ScanRun) -> None:
