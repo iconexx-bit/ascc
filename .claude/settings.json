@@ -1,0 +1,51 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv run pytest:*)",
+      "Bash(uv run ruff:*)",
+      "Bash(uv run mypy:*)",
+      "Bash(uv run python -m ascc:*)",
+      "Bash(uv sync)",
+      "Bash(uv lock)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch)",
+      "Bash(ls:*)",
+      "Bash(tree:*)",
+      "Bash(find src:*)",
+      "Bash(find fixtures:*)",
+      "Bash(rg:*)",
+      "Bash(jq:*)",
+      "Read(./src/**)",
+      "Read(./fixtures/**)",
+      "Read(./pyproject.toml)",
+      "Read(./README.md)",
+      "Read(./RUNBOOK.md)",
+      "Edit(./src/**)",
+      "Edit(./tests/**)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(./.venv/**)",
+      "Read(./**/*.pem)",
+      "Read(./**/*.key)",
+      "Edit(./fixtures/**)",
+      "Edit(./.gitignore)",
+      "Bash(git push:*)",
+      "Bash(git commit:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean:*)",
+      "Bash(rm -rf:*)",
+      "Bash(uv add:*)",
+      "Bash(pip install:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Read(./.git/**)",
+      "Edit(./.git/**)",
+      "Bash(git config:*)"
+    ]
+  }
+}
