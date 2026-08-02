@@ -51,3 +51,14 @@ def test_dedup_key_is_stable(fixtures_dir: Path) -> None:
     first_by_rule = {f.rule_id: f.dedup_key for f in first.findings}
     second_by_rule = {f.rule_id: f.dedup_key for f in second.findings}
     assert first_by_rule == second_by_rule
+
+def test_sg_misconfig_confidence_is_low(scan_run) -> None:
+    """SG резолвится через generated-id без моста — уверенность низкая.
+
+    Дополняет test_bucket_misconfig_is_deterministic: тот проверяет
+    достоверный резолв (1.0), этот — эвристический (0.4). Оба уровня
+    должны быть зафиксированы, иначе регрессия в одном пройдёт молча.
+    """
+    finding = next(f for f in scan_run.findings if f.rule_id == "AVD-AWS-0107")
+    assert finding.min_confidence == 0.4
+    assert finding.resolutions[0].method == "terraform_generated_id_unbridged"
