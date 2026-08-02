@@ -80,18 +80,15 @@ def correlate(
     if correlation_run.clusters:
         clusters_table = Table(title="Clusters")
         clusters_table.add_column("Representative")
-        clusters_table.add_column("Keys")
         clusters_table.add_column("Left")
         clusters_table.add_column("Right")
         clusters_table.add_column("Method")
         clusters_table.add_column("Confidence")
         for cluster in correlation_run.clusters:
             representative = str(cluster.representative())
-            keys = ", ".join(sorted(str(k) for k in cluster.keys))
             for fact in cluster.facts:
                 clusters_table.add_row(
                     representative,
-                    keys,
                     str(fact.left),
                     str(fact.right),
                     fact.method,
@@ -108,7 +105,7 @@ def correlate(
             finding_id = f"{finding.scanner}:{finding.rule_id}"
             for resolution in finding.resolutions:
                 own_key = resolution.key
-                findings_table.add_row(finding_id, str(own_key), f"{resolution.confidence:g}")
+                findings_table.add_row(finding_id, str(own_key), f"{resolution.confidence:.3f}")
                 cluster = next((c for c in correlation_run.clusters if own_key in c.keys), None)
                 if cluster is None:
                     continue
@@ -122,8 +119,7 @@ def correlate(
                     findings_table.add_row(
                         finding_id,
                         str(other_key),
-                        f"{eff:.3f} = {resolution.confidence:g} resolve x "
-                        f"{bridge_confidence:g} bridge",
+                        f"{eff:.3f} = {resolution.confidence:.3f} x {bridge_confidence:.3f} bridge",
                     )
     console.print(findings_table)
 
