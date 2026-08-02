@@ -120,3 +120,30 @@ not the ground it connects. A chain is never stronger than its weakest link.
 These are project demo data, not test artifacts. Tests read them; they do
 not own them. `ascc correlate --input fixtures/leaky_data_lake/` is the
 documented entry point.
+
+### Cluster representative is derived, never stored
+
+A cluster has no canonical key. When one label is needed for display or
+export, it is computed:
+
+    representative(cluster) = max(keys, key=lambda k: (max_confidence(k), k))
+
+Highest-confidence key wins; ties break lexicographically. Deterministic,
+reproducible, and costs nothing in the schema — the rule can change
+tomorrow without rewriting data.
+
+### Transitivity: direct facts only
+
+Clusters are connected components over observed bridge facts. Membership
+is transitive; **confidence is not**.
+
+If A↔B and B↔C were each observed, A and C belong to the same cluster, but
+ASCC declares no confidence for the pair A↔C. No scanner ever saw them
+together. Reporting a computed 0.9 for A↔C would be a silent merge in two
+steps — exactly what this project exists to prevent.
+
+Instead the report states the path: A→B (0.95, observed_together),
+B→C (0.95, observed_together). The reader judges the chain.
+
+Two people each confidently know an Ivanov. It does not follow that they
+know the same Ivanov.
