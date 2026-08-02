@@ -82,3 +82,41 @@ Makefile отсутствует — команд make не существует,
   разведка стоит столько же токенов, сколько работа.
 - ТЗ длиннее 40 строк класть в task.md и ссылаться @task.md —
   длинные вставки в поле ввода обрезаются.
+
+## Identity bridging: cluster model
+
+When two scanners produce different keys for the same real resource, ASCC
+does **not** merge them. Neither `Resource` is modified, renamed, or absorbed.
+
+Instead a `ResourceCluster` records:
+- the set of keys believed to denote one resource
+- the bridge facts that justify that belief, each with method, confidence
+  and the observation it came from
+
+Rationale: ingest is a protocol of what scanners observed. Merging rewrites
+that protocol and makes "why did you decide these are one resource"
+unanswerable. Bridging is data, not mutation — it can be recomputed,
+versioned, or switched off without touching ingest output.
+
+Rejected alternatives:
+- **merge**: destroys the losing key; a later scan producing it has nowhere
+  to land; irreversible if the bridge was wrong
+- **alias**: keeps keys but forces an arbitrary "canonical" choice, and the
+  justification ends up scattered across pointers
+
+### Invariant: confidence composes, never replaces
+
+A claim that travels over a bridge is the product of every link it crosses:
+
+    effective = resolution.confidence * PRODUCT(bridge.confidence)
+
+Example: a Trivy CVE bound to `aws:ec2:instance:datalake-etl` by path
+heuristic (0.5), bridged to `i-0a1b2c3d4e5f67890` (0.95), is a 0.475 claim
+about that instance — not a 0.95 one. Bridge confidence describes the bridge,
+not the ground it connects. A chain is never stronger than its weakest link.
+
+### fixtures/ lives at repo root, deliberately
+
+These are project demo data, not test artifacts. Tests read them; they do
+not own them. `ascc correlate --input fixtures/leaky_data_lake/` is the
+documented entry point.
