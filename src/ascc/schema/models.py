@@ -78,7 +78,7 @@ class Finding:
 @dataclass(slots=True)
 class ScanRun:
     scanner: str
-    started_at: datetime
+    started_at: datetime | None = None
     findings: list[Finding] = field(default_factory=list)
     resources: dict[str, Resource] = field(default_factory=dict)
     bridge_facts: list[BridgeFact] = field(default_factory=list)

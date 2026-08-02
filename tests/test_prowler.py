@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -85,3 +86,7 @@ def test_prowler_bridges_exactly_ec2_and_security_group(scan_run: ScanRun) -> No
 
 def test_bridge_fact_evidence_names_the_observation(scan_run: ScanRun) -> None:
     assert all("arn:aws:" in f.evidence and "name=" in f.evidence for f in scan_run.bridge_facts)
+
+
+def test_started_at_is_reported(scan_run: ScanRun) -> None:
+    assert isinstance(scan_run.started_at, datetime)

@@ -33,9 +33,8 @@ def test_shows_bridge_composition(result) -> None:
     assert "0.475" in result.output
 
 
-def test_warns_about_skipped_checkov(result) -> None:
-    assert "checkov.json" in result.output
-    assert "unrecognized format" in result.output
+def test_shows_checkov_findings(result) -> None:
+    assert "CKV_AWS_40" in result.output
 
 
 def test_warns_about_skipped_readme(result) -> None:

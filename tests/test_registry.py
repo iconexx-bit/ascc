@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from ascc.ingest.base import ScannerParser
+from ascc.ingest.checkov import CheckovParser
 from ascc.ingest.prowler import ProwlerParser
 from ascc.ingest.registry import parser_for
 from ascc.ingest.trivy import TrivyParser
@@ -22,9 +23,9 @@ def test_prowler_fixture_recognized_as_prowler(fixtures_dir: Path) -> None:
     assert parser_for(data) is ProwlerParser
 
 
-def test_checkov_fixture_unrecognized(fixtures_dir: Path) -> None:
+def test_checkov_fixture_recognized_as_checkov(fixtures_dir: Path) -> None:
     data = json.loads((fixtures_dir / "checkov.json").read_text())
-    assert parser_for(data) is None
+    assert parser_for(data) is CheckovParser
 
 
 def test_readme_is_not_valid_json(fixtures_dir: Path) -> None:
@@ -43,6 +44,8 @@ def test_readme_is_not_valid_json(fixtures_dir: Path) -> None:
         (TrivyParser, "checkov.json"),
         (ProwlerParser, "trivy.json"),
         (ProwlerParser, "checkov.json"),
+        (CheckovParser, "trivy.json"),
+        (CheckovParser, "prowler.json"),
     ],
 )
 def test_sniff_rejects_foreign_fixture(

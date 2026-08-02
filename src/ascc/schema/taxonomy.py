@@ -13,7 +13,7 @@ class Severity(IntEnum):
     CRITICAL = 4
 
     @classmethod
-    def from_trivy(cls, value: str) -> Severity:
+    def from_severity_string(cls, value: str) -> Severity:
         return {
             "UNKNOWN": cls.INFO,
             "LOW": cls.LOW,
@@ -21,6 +21,10 @@ class Severity(IntEnum):
             "HIGH": cls.HIGH,
             "CRITICAL": cls.CRITICAL,
         }.get(value.upper(), cls.INFO)
+
+    @classmethod
+    def from_trivy(cls, value: str) -> Severity:
+        return cls.from_severity_string(value)
 
     @classmethod
     def from_ocsf(cls, severity_id: int) -> Severity:

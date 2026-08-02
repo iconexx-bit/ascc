@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -108,3 +109,7 @@ def test_parse_accepts_str_path(fixtures_dir: Path, scan_run: ScanRun) -> None:
 
 def test_trivy_yields_no_bridge_facts(scan_run: ScanRun) -> None:
     assert scan_run.bridge_facts == []
+
+
+def test_started_at_is_reported(scan_run: ScanRun) -> None:
+    assert isinstance(scan_run.started_at, datetime)

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from .base import ScannerParser
+from .checkov import CheckovParser
 from .prowler import ProwlerParser
 from .trivy import TrivyParser
 
-PARSERS: tuple[type[ScannerParser], ...] = (TrivyParser, ProwlerParser)
+PARSERS: tuple[type[ScannerParser], ...] = (TrivyParser, ProwlerParser, CheckovParser)
 
 
 def parser_for(data: dict | list) -> type[ScannerParser] | None:

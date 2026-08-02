@@ -45,6 +45,9 @@ fixtures/leaky_data_lake/ — эталонный сценарий:
   объяснений — задача correlate/, не ingest/.
 - Сканер определяется по структуре документа, а не по имени файла:
   parse_this.json и trivy-2024-01.json равноправны, решает sniff().
+- Отсутствующее наблюдение — это None, а не суррогат. Сканер, не
+  сообщивший время скана, не получает epoch или now(): подделка
+  выглядит как данные и переживёт того, кто её вставил.
 
 ## Окружение и команды
 Пакетный менеджер — uv. Виртуальное окружение: .venv в корне.
@@ -158,3 +161,9 @@ picks a deterministic winner for display and records the
 disagreement in tag_conflicts. Drift between IaC and live cloud
 is exactly what this layer exists to surface — crashing on it
 would throw away the finding.
+
+## Backlog
+
+- _record_resource дублируется в трёх парсерах. Поднять в
+  ScannerParser отдельным рефакторингом — не смешивать с добавлением
+  сканера.
