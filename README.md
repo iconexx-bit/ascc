@@ -28,13 +28,17 @@ then reasons over what remains.
 
 Identity resolution is not always deterministic. ASCC never hides that —
 every resolution carries its confidence and the method that produced it:
-rule_id conf resource method
-CVE-2021-44228 0.5 aws:ec2:instance:datalake-etl filesystem_path_heuristic
-CVE-2022-42889 0.5 aws:ec2:instance:datalake-etl filesystem_path_heuristic
-CVE-2022-3602 0.5 aws:ec2:instance:datalake-etl filesystem_path_heuristic
-CVE-2023-38545 0.5 aws:ec2:instance:datalake-etl filesystem_path_heuristic
-AVD-AWS-0028 1.0 aws:s3:bucket:datalake-raw terraform_natural_name
-AVD-AWS-0107 0.4 aws:ec2:security-group:datalake-etl-sg terraform_generated_id_unbridged
+
+```text
+rule_id          conf   resource                                method
+CVE-2021-44228   0.5    aws:ec2:instance:datalake-etl           filesystem_path_heuristic
+CVE-2022-42889   0.5    aws:ec2:instance:datalake-etl           filesystem_path_heuristic
+CVE-2022-3602    0.5    aws:ec2:instance:datalake-etl           filesystem_path_heuristic
+CVE-2023-38545   0.5    aws:ec2:instance:datalake-etl           filesystem_path_heuristic
+AVD-AWS-0028     1.0    aws:s3:bucket:datalake-raw              terraform_natural_name
+AVD-AWS-0107     0.4    aws:ec2:security-group:datalake-etl-sg  terraform_generated_id_unbridged
+```
+
 - **1.0** — deterministic. An ARN and a Terraform address for a bucket
   provably describe the same resource.
 - **0.5** — heuristic. A filesystem scan of `/opt/datalake-etl` probably
@@ -48,7 +52,9 @@ nonsense. Contract tests actively guard the low-confidence cases against
 being "fixed" by more aggressive normalization.
 
 ## Architecture
+```
 ingest -> schema -> store -> correlate -> export
+```
 - Resource-centric normalized schema — the resource is primary,
   findings attach to it (many-to-many)
 - PostgreSQL + pgvector for storage and semantic correlation
