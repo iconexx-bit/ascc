@@ -1,0 +1,321 @@
+[
+  {
+    "metadata": {
+      "event_code": "s3_bucket_level_public_access_block",
+      "product": { "name": "Prowler", "vendor_name": "Prowler", "version": "4.5.4" },
+      "profiles": ["cloud", "datetime"]
+    },
+    "severity": "Critical",
+    "severity_id": 5,
+    "status": "New",
+    "status_code": "FAIL",
+    "status_detail": "S3 Bucket datalake-raw does not have Public Access Block configured and bucket ACL allows public read.",
+    "status_id": 1,
+    "activity_id": 1,
+    "activity_name": "Create",
+    "category_name": "Findings",
+    "category_uid": 2,
+    "class_name": "Detection Finding",
+    "class_uid": 2004,
+    "type_uid": 200401,
+    "type_name": "Detection Finding: Create",
+    "cloud": {
+      "account": { "uid": "123456789012", "name": "ascc-demo" },
+      "provider": "aws",
+      "region": "us-east-1"
+    },
+    "finding_info": {
+      "created_time": "2026-07-28T09:20:11Z",
+      "desc": "Ensure S3 buckets have Public Access Block enabled and do not grant public read access.",
+      "product_uid": "prowler",
+      "title": "S3 Bucket datalake-raw allows public read access",
+      "types": ["Sensitive Data Exposure"],
+      "uid": "prowler-aws-s3_bucket_level_public_access_block-123456789012-us-east-1-datalake-raw"
+    },
+    "resources": [
+      {
+        "uid": "arn:aws:s3:::datalake-raw",
+        "name": "datalake-raw",
+        "type": "AwsS3Bucket",
+        "region": "us-east-1",
+        "tags": [
+          { "key": "DataClassification", "value": "PII" },
+          { "key": "Environment", "value": "production" }
+        ],
+        "data": { "public_access_block": false, "acl": "public-read" }
+      }
+    ],
+    "compliance": { "status": "FAIL" },
+    "risk_details": "Bucket is reachable from the public internet and contains objects tagged as PII, exposing customer data to unauthenticated access.",
+    "remediation": {
+      "desc": "Enable S3 Block Public Access at the bucket and account level, and remove the public-read ACL.",
+      "references": ["https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html"]
+    },
+    "time_dt": "2026-07-28T09:20:11Z"
+  },
+  {
+    "metadata": {
+      "event_code": "s3_bucket_default_encryption",
+      "product": { "name": "Prowler", "vendor_name": "Prowler", "version": "4.5.4" },
+      "profiles": ["cloud", "datetime"]
+    },
+    "severity": "High",
+    "severity_id": 4,
+    "status": "New",
+    "status_code": "FAIL",
+    "status_detail": "S3 Bucket datalake-raw does not have server-side encryption enabled.",
+    "status_id": 1,
+    "activity_id": 1,
+    "activity_name": "Create",
+    "category_name": "Findings",
+    "category_uid": 2,
+    "class_name": "Detection Finding",
+    "class_uid": 2004,
+    "type_uid": 200401,
+    "type_name": "Detection Finding: Create",
+    "cloud": {
+      "account": { "uid": "123456789012", "name": "ascc-demo" },
+      "provider": "aws",
+      "region": "us-east-1"
+    },
+    "finding_info": {
+      "created_time": "2026-07-28T09:20:12Z",
+      "desc": "Ensure S3 buckets have server-side encryption enabled by default.",
+      "product_uid": "prowler",
+      "title": "S3 Bucket datalake-raw does not have default encryption enabled",
+      "types": ["Data Protection"],
+      "uid": "prowler-aws-s3_bucket_default_encryption-123456789012-us-east-1-datalake-raw"
+    },
+    "resources": [
+      {
+        "uid": "arn:aws:s3:::datalake-raw",
+        "name": "datalake-raw",
+        "type": "AwsS3Bucket",
+        "region": "us-east-1",
+        "tags": [
+          { "key": "DataClassification", "value": "PII" },
+          { "key": "Environment", "value": "production" }
+        ],
+        "data": { "server_side_encryption": null }
+      }
+    ],
+    "compliance": { "status": "FAIL" },
+    "risk_details": "PII data stored without encryption at rest, combined with public read access, compounds exposure severity.",
+    "remediation": {
+      "desc": "Enable default SSE-KMS encryption on the bucket.",
+      "references": ["https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-encryption.html"]
+    },
+    "time_dt": "2026-07-28T09:20:12Z"
+  },
+  {
+    "metadata": {
+      "event_code": "s3_bucket_server_access_logging_enabled",
+      "product": { "name": "Prowler", "vendor_name": "Prowler", "version": "4.5.4" },
+      "profiles": ["cloud", "datetime"]
+    },
+    "severity": "Medium",
+    "severity_id": 3,
+    "status": "New",
+    "status_code": "FAIL",
+    "status_detail": "S3 Bucket datalake-raw does not have server access logging enabled.",
+    "status_id": 1,
+    "activity_id": 1,
+    "activity_name": "Create",
+    "category_name": "Findings",
+    "category_uid": 2,
+    "class_name": "Detection Finding",
+    "class_uid": 2004,
+    "type_uid": 200401,
+    "type_name": "Detection Finding: Create",
+    "cloud": {
+      "account": { "uid": "123456789012", "name": "ascc-demo" },
+      "provider": "aws",
+      "region": "us-east-1"
+    },
+    "finding_info": {
+      "created_time": "2026-07-28T09:20:13Z",
+      "desc": "Ensure S3 buckets have server access logging enabled.",
+      "product_uid": "prowler",
+      "title": "S3 Bucket datalake-raw does not have access logging enabled",
+      "types": ["Logging & Monitoring"],
+      "uid": "prowler-aws-s3_bucket_server_access_logging_enabled-123456789012-us-east-1-datalake-raw"
+    },
+    "resources": [
+      {
+        "uid": "arn:aws:s3:::datalake-raw",
+        "name": "datalake-raw",
+        "type": "AwsS3Bucket",
+        "region": "us-east-1",
+        "tags": [
+          { "key": "DataClassification", "value": "PII" },
+          { "key": "Environment", "value": "production" }
+        ],
+        "data": { "logging_enabled": false }
+      }
+    ],
+    "compliance": { "status": "FAIL" },
+    "risk_details": "Without access logging, unauthorized reads against the public PII bucket would leave no audit trail.",
+    "remediation": {
+      "desc": "Enable server access logging to a dedicated, restricted logging bucket.",
+      "references": ["https://docs.aws.amazon.com/AmazonS3/latest/userguide/ServerLogs.html"]
+    },
+    "time_dt": "2026-07-28T09:20:13Z"
+  },
+  {
+    "metadata": {
+      "event_code": "iam_inline_policy_no_administrative_privileges",
+      "product": { "name": "Prowler", "vendor_name": "Prowler", "version": "4.5.4" },
+      "profiles": ["cloud", "datetime"]
+    },
+    "severity": "Critical",
+    "severity_id": 5,
+    "status": "New",
+    "status_code": "FAIL",
+    "status_detail": "IAM Role datalake-etl-role has an inline policy granting Action:* Resource:* (full administrative privileges).",
+    "status_id": 1,
+    "activity_id": 1,
+    "activity_name": "Create",
+    "category_name": "Findings",
+    "category_uid": 2,
+    "class_name": "Detection Finding",
+    "class_uid": 2004,
+    "type_uid": 200401,
+    "type_name": "Detection Finding: Create",
+    "cloud": {
+      "account": { "uid": "123456789012", "name": "ascc-demo" },
+      "provider": "aws",
+      "region": "us-east-1"
+    },
+    "finding_info": {
+      "created_time": "2026-07-28T09:20:14Z",
+      "desc": "Ensure IAM policies attached to roles do not allow full administrative ('*:*') privileges.",
+      "product_uid": "prowler",
+      "title": "IAM Role datalake-etl-role allows full administrative privileges",
+      "types": ["Privilege Escalation"],
+      "uid": "prowler-aws-iam_inline_policy_no_administrative_privileges-123456789012-us-east-1-datalake-etl-role"
+    },
+    "resources": [
+      {
+        "uid": "arn:aws:iam::123456789012:role/datalake-etl-role",
+        "name": "datalake-etl-role",
+        "type": "AwsIamRole",
+        "region": "us-east-1",
+        "tags": [{ "key": "Environment", "value": "production" }],
+        "data": { "inline_policy_actions": ["*"], "inline_policy_resources": ["*"] }
+      }
+    ],
+    "compliance": { "status": "FAIL" },
+    "risk_details": "Any principal able to assume this role, including a compromised EC2 instance, inherits unrestricted access to every resource in the account.",
+    "remediation": {
+      "desc": "Scope the inline policy down to the specific S3 actions and ARNs the ETL job requires.",
+      "references": ["https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#grant-least-privilege"]
+    },
+    "time_dt": "2026-07-28T09:20:14Z"
+  },
+  {
+    "metadata": {
+      "event_code": "ec2_securitygroup_allow_ingress_from_internet_to_port_22",
+      "product": { "name": "Prowler", "vendor_name": "Prowler", "version": "4.5.4" },
+      "profiles": ["cloud", "datetime"]
+    },
+    "severity": "Critical",
+    "severity_id": 5,
+    "status": "New",
+    "status_code": "FAIL",
+    "status_detail": "Security group sg-0f9e8d7c6b5a43210 (datalake-etl-sg) allows ingress from 0.0.0.0/0 on port 22.",
+    "status_id": 1,
+    "activity_id": 1,
+    "activity_name": "Create",
+    "category_name": "Findings",
+    "category_uid": 2,
+    "class_name": "Detection Finding",
+    "class_uid": 2004,
+    "type_uid": 200401,
+    "type_name": "Detection Finding: Create",
+    "cloud": {
+      "account": { "uid": "123456789012", "name": "ascc-demo" },
+      "provider": "aws",
+      "region": "us-east-1"
+    },
+    "finding_info": {
+      "created_time": "2026-07-28T09:20:15Z",
+      "desc": "Ensure no security group allows unrestricted ingress from the internet to port 22.",
+      "product_uid": "prowler",
+      "title": "Security group datalake-etl-sg allows SSH from the internet",
+      "types": ["Network Exposure"],
+      "uid": "prowler-aws-ec2_securitygroup_allow_ingress_from_internet_to_port_22-123456789012-us-east-1-sg-0f9e8d7c6b5a43210"
+    },
+    "resources": [
+      {
+        "uid": "arn:aws:ec2:us-east-1:123456789012:security-group/sg-0f9e8d7c6b5a43210",
+        "name": "datalake-etl-sg",
+        "type": "AwsEc2SecurityGroup",
+        "region": "us-east-1",
+        "tags": [{ "key": "Environment", "value": "production" }],
+        "data": { "ip_permissions": [{ "from_port": 22, "to_port": 22, "cidr": "0.0.0.0/0" }] }
+      }
+    ],
+    "compliance": { "status": "FAIL" },
+    "risk_details": "Attached to the datalake-etl-role EC2 instance, this rule exposes an SSH-reachable, unpatched host directly to the internet.",
+    "remediation": {
+      "desc": "Restrict ingress to known management CIDR ranges or move to SSM Session Manager.",
+      "references": ["https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html"]
+    },
+    "time_dt": "2026-07-28T09:20:15Z"
+  },
+  {
+    "metadata": {
+      "event_code": "ec2_instance_public_ip",
+      "product": { "name": "Prowler", "vendor_name": "Prowler", "version": "4.5.4" },
+      "profiles": ["cloud", "datetime"]
+    },
+    "severity": "Medium",
+    "severity_id": 3,
+    "status": "New",
+    "status_code": "FAIL",
+    "status_detail": "EC2 instance i-0a1b2c3d4e5f67890 (datalake-etl) has a public IP address assigned.",
+    "status_id": 1,
+    "activity_id": 1,
+    "activity_name": "Create",
+    "category_name": "Findings",
+    "category_uid": 2,
+    "class_name": "Detection Finding",
+    "class_uid": 2004,
+    "type_uid": 200401,
+    "type_name": "Detection Finding: Create",
+    "cloud": {
+      "account": { "uid": "123456789012", "name": "ascc-demo" },
+      "provider": "aws",
+      "region": "us-east-1"
+    },
+    "finding_info": {
+      "created_time": "2026-07-28T09:20:16Z",
+      "desc": "Ensure EC2 instances are not launched with a public IP unless explicitly required.",
+      "product_uid": "prowler",
+      "title": "EC2 instance datalake-etl is publicly reachable",
+      "types": ["Network Exposure"],
+      "uid": "prowler-aws-ec2_instance_public_ip-123456789012-us-east-1-i-0a1b2c3d4e5f67890"
+    },
+    "resources": [
+      {
+        "uid": "arn:aws:ec2:us-east-1:123456789012:instance/i-0a1b2c3d4e5f67890",
+        "name": "datalake-etl",
+        "type": "AwsEc2Instance",
+        "region": "us-east-1",
+        "tags": [{ "key": "Environment", "value": "production" }, { "key": "Role", "value": "etl" }],
+        "data": {
+          "public_ip": "3.91.44.201",
+          "security_groups": ["sg-0f9e8d7c6b5a43210"],
+          "iam_instance_profile_arn": "arn:aws:iam::123456789012:instance-profile/datalake-etl-role"
+        }
+      }
+    ],
+    "compliance": { "status": "FAIL" },
+    "risk_details": "Public IP plus an open SSH ingress rule plus an over-privileged attached role forms a direct path from the internet to the sensitive S3 bucket.",
+    "remediation": {
+      "desc": "Move the instance behind a bastion/NAT and remove the public IP association.",
+      "references": ["https://docs.aws.amazon.com/vpc/latest/userguide/vpc-ip-addressing.html"]
+    },
+    "time_dt": "2026-07-28T09:20:16Z"
+  }
+]

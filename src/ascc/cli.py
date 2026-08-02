@@ -6,6 +6,11 @@ from rich import print
 app = typer.Typer(name="ascc", help="AI Security Command Center")
 
 
+@app.callback()
+def main() -> None:
+    """AI Security Command Center — correlation layer over Trivy, Prowler, Checkov."""
+
+
 @app.command()
 def correlate(
     input: Path = typer.Option(
