@@ -57,3 +57,4 @@ class ScanRun:
     scanner: str
     started_at: datetime
     findings: list[Finding] = field(default_factory=list)
+    resources: dict[str, Resource] = field(default_factory=dict)
