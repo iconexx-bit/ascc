@@ -1,0 +1,55 @@
+name: "CodeQL Security Analysis"
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    # Запуск каждое воскресенье в 00:00 UTC для выявления новых 0-day уязвимостей
+    - cron: '0 0 * * 0'
+
+# ГЛОБАЛЬНАЯ БЕЗОПАСНОСТЬ: Полный запрет всех прав по умолчанию
+permissions: {}
+
+jobs:
+  analyze:
+    name: Analyze Code Integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 360 # Защита от бесконечного виса runner'а
+
+    # ТОЧЕЧНЫЕ ПРАВА: Выдаем права строго под задачи CodeQL
+    permissions:
+      contents: read             # Для клонирования репозитория (checkout)
+      security-events: write     # Для загрузки результатов в репозиторий (Security tab)
+      actions: read              # Для анализа workflow-файлов (для некоторых языков)
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Укажи языки твоего проекта: 'cpp', 'csharp', 'go', 'java', 'javascript-typescript', 'python', 'ruby', 'swift'
+        language: [ 'python' ]
+
+    steps:
+      # 1. Безопасный Checkout со строгой фиксацией по SHA-1 коммита (v4.1.7)
+      - name: Checkout Repository
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+
+      # 2. Инициализация CodeQL с фиксацией по SHA-1 (v3.25.11)
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@b611370bb5703a7efb587f9d136a52ea24c5c38c
+        with:
+          languages: ${{ matrix.language }}
+          # Расширенный набор правил безопасности (включая качество кода и известные CWE)
+          queries: security-extended,security-and-quality
+
+      # 3. Автоматическая сборка (если язык компилируемый, например Java/C++/Go).
+      # Для скриптовых языков (Python/JS) этот шаг можно пропустить.
+      - name: Autobuild Project
+        uses: github/codeql-action/autobuild@b611370bb5703a7efb587f9d136a52ea24c5c38c
+
+      # 4. Выполнение анализа и публикация SARIF-отчета
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@b611370bb5703a7efb587f9d136a52ea24c5c38c
+        with:
+          category: "/language:${{ matrix.language }}"
