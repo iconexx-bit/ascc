@@ -31,3 +31,22 @@ jobs:
 
       - name: Test
         run: uv run pytest tests/ -q
+
+      - name: 🚨 Notify Discord on Failure
+        if: failure()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          curl -H "Content-Type: application/json" \
+               -d '{"content": "❌ **АЛЕРТ Blue Team:** Пайплайн `'"$GITHUB_WORKFLOW"'` завершился с ошибкой! Репозиторий: `'"$GITHUB_REPOSITORY"'`. Требуется проверка."}' \
+               $DISCORD_WEBHOOK
+
+      - name: 🚨 Notify Telegram on Failure
+        if: failure()
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${BOT_TOKEN}/sendMessage \
+               -d chat_id=${CHAT_ID} \
+               -d text="❌ АЛЕРТ: Сбой пайплайна ${GITHUB_WORKFLOW} в репозитории ${GITHUB_REPOSITORY}. Интеграция прервана."
