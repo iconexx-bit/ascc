@@ -50,3 +50,14 @@ jobs:
           curl -s -X POST https://api.telegram.org/bot${BOT_TOKEN}/sendMessage \
                -d chat_id=${CHAT_ID} \
                -d text="❌ АЛЕРТ: Сбой пайплайна ${GITHUB_WORKFLOW} в репозитории ${GITHUB_REPOSITORY}. Интеграция прервана."
+
+      - name: 🔍 Debug Telegram token/chat
+        if: failure()
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+        run: |
+          echo "getMe:"
+          curl -s "https://api.telegram.org/bot${BOT_TOKEN}/getMe"
+          echo
+          echo "getUpdates:"
+          curl -s "https://api.telegram.org/bot${BOT_TOKEN}/getUpdates"
