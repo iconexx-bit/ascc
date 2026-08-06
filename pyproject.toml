@@ -27,6 +27,7 @@ build-backend = "hatchling.build"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+extend-exclude = ["*.md"]
 
 [tool.ruff.lint.per-file-ignores]
 # Typer выражает CLI-параметры вызовом в дефолте аргумента — это его идиом,
