@@ -50,3 +50,15 @@ jobs:
           curl -s -X POST https://api.telegram.org/bot${BOT_TOKEN}/sendMessage \
                -d chat_id=${CHAT_ID} \
                -d text="❌ АЛЕРТ: Сбой пайплайна ${GITHUB_WORKFLOW} в репозитории ${GITHUB_REPOSITORY}. Интеграция прервана."
+
+  secrets-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # нужна полная история, не только последний коммит
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

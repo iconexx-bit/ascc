@@ -3,7 +3,9 @@
 Явно защищает от замены на геометрическое (или арифметическое) среднее —
 см. докстринг effective_confidence в correlate/run.py.
 """
+
 from __future__ import annotations
+
 import math
 
 
@@ -33,5 +35,5 @@ def test_product_decays_with_chain_length_geomean_does_not() -> None:
     product = math.prod(links)
     geomean = math.prod(links) ** (1 / len(links))
 
-    assert product < 0.6   # накопленная неопределённость видна
+    assert product < 0.6  # накопленная неопределённость видна
     assert abs(geomean - 0.9) < 0.001  # среднее слепо к длине цепи — не годится
