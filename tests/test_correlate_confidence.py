@@ -19,7 +19,7 @@ def test_composition_is_product_not_geometric_mean() -> None:
     product = resolution_confidence * bridge_confidence
     geomean = math.sqrt(resolution_confidence * bridge_confidence)
 
-    assert product == 0.475
+    assert abs(product - 0.475) < 1e-9
     assert abs(geomean - 0.6892) < 0.001
     assert product < geomean, (
         "Композиция должна быть строже среднего — иначе цепочка "
