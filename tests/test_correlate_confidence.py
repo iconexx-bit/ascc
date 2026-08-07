@@ -38,3 +38,4 @@ def test_product_decays_with_chain_length_geomean_does_not() -> None:
     assert product < 0.6  # накопленная неопределённость видна
     assert abs(geomean - 0.9) < 0.001  # среднее слепо к длине цепи — не годится
 def test_chaos_intentional_failure(): assert False
+def test_chaos_intentional_failure(): assert False
