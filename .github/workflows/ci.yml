@@ -54,9 +54,13 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          curl -H "Content-Type: application/json" \
+          if [ -z "$DISCORD_WEBHOOK" ]; then
+            echo "::error::DISCORD_WEBHOOK пустой — секрет не подставился"
+            exit 1
+          fi
+          curl -sS --fail-with-body -H "Content-Type: application/json" \
                -d '{"content": "❌ **АЛЕРТ Blue Team:** Пайплайн `'"$GITHUB_WORKFLOW"'` завершился с ошибкой! Репозиторий: `'"$GITHUB_REPOSITORY"'`. Лог: '"$RUN_URL"'. Требуется проверка."}' \
-               $DISCORD_WEBHOOK
+               "$DISCORD_WEBHOOK"
 
       - name: 🚨 Notify Telegram
         env:
@@ -64,6 +68,11 @@ jobs:
           CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          curl -s -X POST https://api.telegram.org/bot${BOT_TOKEN}/sendMessage \
-               -d chat_id=${CHAT_ID} \
+          if [ -z "$BOT_TOKEN" ] || [ -z "$CHAT_ID" ]; then
+            echo "::error::TELEGRAM_TOKEN или TELEGRAM_CHAT_ID пустые — секреты не подставились"
+            exit 1
+          fi
+          curl -sS --fail-with-body -X POST \
+               "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+               -d chat_id="${CHAT_ID}" \
                -d text="❌ АЛЕРТ: Сбой пайплайна ${GITHUB_WORKFLOW} в репозитории ${GITHUB_REPOSITORY}. Лог: ${RUN_URL}. Требуется проверка."
