@@ -3,5 +3,6 @@
 # <body>
 #
 # <footer>
-# Type: feat|fix|docs|style|refactor|perf|test|chore|ci|security
-# Scope: [identity-resolution|parser|graph|scorer|retrieval|cli]
+# 
+# Types: feat | fix | docs | style | refactor | perf | test | chore | ci | security
+# Scopes: parser | graph | identity-resolution | scorer | retrieval | diff | merge | cli
