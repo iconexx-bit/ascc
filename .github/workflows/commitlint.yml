@@ -1,0 +1,31 @@
+name: Commit Lint
+
+on:
+  pull_request:
+
+jobs:
+  commitlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate commit messages
+        run: |
+          VALID_TYPES="feat|fix|docs|style|refactor|perf|test|chore|ci|security"
+          VALID_SCOPES="parser|graph|identity-resolution|scorer|retrieval|diff|merge|cli"
+          PATTERN="^($VALID_TYPES)(\($VALID_SCOPES\))?: .{1,50}$"
+
+          FAILED=0
+          for commit in $(git rev-list origin/main..HEAD); do
+            SUBJECT=$(git log --format=%B -n 1 $commit | head -n 1)
+            if ! echo "$SUBJECT" | grep -qE "$PATTERN"; then
+              echo "❌ Invalid: $SUBJECT"
+              echo "   Format: <type>(<scope>): <message>"
+              echo "   Types: $VALID_TYPES"
+              echo "   Scopes: $VALID_SCOPES"
+              FAILED=1
+            fi
+          done
+          [ $FAILED -eq 0 ] && echo "✅ All commits valid" || exit 1

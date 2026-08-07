@@ -130,6 +130,26 @@ uv sync --extra dev
 ascc correlate --input <path-to-scanner-output-dir>
 ```
 
+## Commit Convention
+
+We use Conventional Commits.
+
+After cloning, enable the template:
+```bash
+git config commit.template .gitmessage
+```
+
+**Format**: `<type>(<scope>): <message>`
+
+**Types**: feat | fix | docs | style | refactor | perf | test | chore | ci | security
+**Scopes**: parser | graph | identity-resolution | scorer | retrieval | diff | merge | cli
+
+**Examples**:
+- `feat(parser): add checkov support`
+- `fix(identity-resolution): handle multi-account collisions`
+- `docs: update installation guide`
+- `ci: integrate real-time scanning`
+
 ## Development
 
 ```bash

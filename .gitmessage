@@ -1,8 +1,9 @@
-# <type>(<scope>): <subject>
+# <type>(<scope>): <message>
 #
-# <body>
-#
-# <footer>
-# 
-# Types: feat | fix | docs | style | refactor | perf | test | chore | ci | security
+# Types:  feat | fix | docs | style | refactor | perf | test | chore | ci | security
 # Scopes: parser | graph | identity-resolution | scorer | retrieval | diff | merge | cli
+#
+# Examples:
+#   feat(parser): add checkov normalization
+#   fix(scorer): correct CVSS calculation
+#   docs: update README
