@@ -106,11 +106,15 @@ ingest -> schema -> [store] -> correlate -> [export]
 
 | Component | State |
 |---|---|
-| `schema/` | Identity resolution with provenance, cluster bridging (`BridgeFact`, `ResourceCluster`) |
-| `ingest/` | Trivy, Prowler, Checkov |
-| `store/` | planned |
-| `correlate/` | `IdentityBridge` (clustering) + `CorrelationRun` (tag-conflict resolution) |
-| `export/` | planned |
+| `schema/` | Identity resolution with provenance (`MatchKey`, `resolve()`), cluster bridging (`BridgeFact`, `ResourceCluster`) |
+| `ingest/` | Trivy, Prowler, Checkov parsers behind a common `ScannerParser` interface, plus a `sniff()`-based registry dispatcher |
+| `store/` | not started (PostgreSQL + pgvector planned) |
+| `correlate/` | `IdentityBridge` (clustering) + `CorrelationRun` (tag-conflict resolution, `effective_confidence()`) |
+| `export/` | not started (SARIF planned) |
+
+10 test modules; CI runs lint, format check, and tests, plus a
+separate `secrets-scan` job (gitleaks); pre-commit hooks
+(`.pre-commit-config.yaml`) run ruff and gitleaks locally.
 
 ## Installation
 
