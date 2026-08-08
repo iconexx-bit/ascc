@@ -17,6 +17,10 @@ ingest -> schema -> store -> correlate -> export
 - src/ascc/store/       — слой персистентности, PostgreSQL + pgvector. ПУСТО
 - src/ascc/correlate/   — ядро корреляции и рассуждения, суть проекта. ПУСТО
 - src/ascc/export/      — рендер в SARIF. ПУСТО
+- tests/                — pytest, зеркалит модули: test_trivy.py, test_prowler.py,
+  test_checkov.py, test_registry.py, test_identity.py, test_bridge.py,
+  test_bridge_gap.py, test_correlate.py, test_correlate_confidence.py,
+  test_cli.py, conftest.py
 
 Проект на ранней стадии: почти все подпакеты содержат только __init__.py.
 Порядок реализации: schema -> ingest -> store -> correlate -> export.
@@ -26,12 +30,33 @@ fixtures/leaky_data_lake/ — эталонный сценарий:
 - trivy.json, prowler.json, checkov.json — сырые выводы трёх сканеров
 - README.md — описание сценария, читай его перед работой с фикстурами
 
-Каталога tests/ пока НЕТ. Фикстуры лежат в корне, не в tests/fixtures/.
+Фикстуры лежат в корне, не в tests/fixtures/ — tests/ их читает, но не владеет ими.
 
 ## Архитектурные решения — приняты, не пересматривать
 - Схема: resource-centric normalized — ресурс первичен, findings навешиваются на него
 - Хранилище: PostgreSQL + pgvector
 - SARIF: исключительно на экспорт; внутри — собственная нормализованная модель
+
+## Invariant: canonical execution path
+
+All commands that run project code go through `uv run`.
+
+- `uv run pytest`, `uv run ruff check src/`, `uv run ascc correlate --input DIR`
+- `uv run` syncs the environment against `uv.lock` before execution.
+  A bare `pytest` does not — it runs whatever `.venv` happens to contain.
+
+Direct `.venv/bin/*` invocation is permitted ONLY for interactive debugging
+(`.venv/bin/python -c ...`). It must never appear in README, CI, tests,
+Makefile, or any documented step.
+
+Rationale: CI executes via `uv`. If a local command can succeed on a `.venv`
+that has drifted from `uv.lock`, local green and CI red diverge silently.
+The failure surfaces minutes later in CI instead of immediately.
+
+Note: the VS Code Python extension auto-activates `.venv` in every integrated
+terminal (`python.terminal.activateEnvironment`, default `true`). This makes a
+bare `pytest` *work*, which is exactly what makes it dangerous. Convenience,
+not contract.
 
 ## Инварианты
 - Finding может ссылаться на несколько ресурсов — связь many-to-many
@@ -65,6 +90,9 @@ Makefile отсутствует — команд make не существует,
 - Перед реализацией нового подпакета — сначала план текстом, потом код
 - Новые зависимости — только после явного согласования
 - Вывод тестов и логов сокращай (-q, | tail -30), не тащи простыни в контекст
+- Утверждения о структуре проекта (какие модули пустые/реализованы, что где
+  лежит) подтверждаются find по факту, а не памятью или прошлой версией
+  CLAUDE.md — документация устаревает, дерево каталогов нет
 
 ## Чего НЕ делать
 - Не расширять scope до "добавим ещё один сканер" — это убивает дифференциацию
