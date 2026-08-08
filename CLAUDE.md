@@ -11,19 +11,23 @@
 ## Пайплайн и карта модулей
 ingest -> schema -> store -> correlate -> export
 
-- src/ascc/cli.py       — точка входа (единственный реализованный модуль)
-- src/ascc/ingest/      — парсеры сканеров, по модулю на сканер, общий интерфейс. ПУСТО
-- src/ascc/schema/      — нормализованная модель: Resource, Finding, связи. ПУСТО
+- src/ascc/cli.py       — точка входа
+- src/ascc/ingest/      — парсеры сканеров, по модулю на сканер, общий интерфейс.
+  base.py, registry.py, trivy.py, checkov.py, prowler.py — реализованы
+- src/ascc/schema/      — нормализованная модель: Resource, Finding, связи.
+  models.py, identity.py, taxonomy.py — реализованы
 - src/ascc/store/       — слой персистентности, PostgreSQL + pgvector. ПУСТО
-- src/ascc/correlate/   — ядро корреляции и рассуждения, суть проекта. ПУСТО
+- src/ascc/correlate/   — ядро корреляции и рассуждения, суть проекта.
+  bridge.py, run.py — реализованы
 - src/ascc/export/      — рендер в SARIF. ПУСТО
 - tests/                — pytest, зеркалит модули: test_trivy.py, test_prowler.py,
   test_checkov.py, test_registry.py, test_identity.py, test_bridge.py,
   test_bridge_gap.py, test_correlate.py, test_correlate_confidence.py,
   test_cli.py, conftest.py
 
-Проект на ранней стадии: почти все подпакеты содержат только __init__.py.
-Порядок реализации: schema -> ingest -> store -> correlate -> export.
+Реализованы: ingest, schema, correlate. Пустые (только __init__.py): store, export.
+Порядок реализации: schema -> ingest -> store -> correlate -> export — соблюдён
+частично: correlate реализован раньше store.
 
 ## Тестовые данные
 fixtures/leaky_data_lake/ — эталонный сценарий:
@@ -78,7 +82,7 @@ not contract.
 Пакетный менеджер — uv. Виртуальное окружение: .venv в корне.
 
     uv sync                       # установка зависимостей
-    uv run pytest -q              # тесты (когда появятся)
+    uv run pytest -q              # тесты
     uv run ruff check src/        # линт
     uv run python -m ascc.cli     # запуск CLI
 
