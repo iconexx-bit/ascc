@@ -122,22 +122,23 @@ separate `secrets-scan` job (gitleaks); pre-commit hooks
 git clone https://github.com/iconexx-bit/ascc.git
 cd ascc
 uv sync --extra dev
+
+# Per-clone git config — git does not transfer local settings:
+git config commit.template .gitmessage    # Conventional Commits template
+git config core.hooksPath .githooks       # pre-commit: uv.lock / .venv drift check
 ```
+
+Without `core.hooksPath`, the pre-commit hook sits in the tree and never runs.
 
 ## Usage
 
 ```bash
-ascc correlate --input <path-to-scanner-output-dir>
+uv run ascc correlate --input <path-to-scanner-output-dir>
 ```
 
 ## Commit Convention
 
-We use Conventional Commits.
-
-After cloning, enable the template:
-```bash
-git config commit.template .gitmessage
-```
+We use Conventional Commits. The message template is enabled in [Installation](#installation).
 
 **Format**: `<type>(<scope>): <message>`
 
