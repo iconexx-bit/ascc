@@ -88,8 +88,8 @@ Effective confidence for a claim that crosses a bridge is the product of its res
 
 ## Architecture
 ```
-ingest -> schema -> [store] -> correlate -> [export]
-(bracketed stages are not built yet)
+schema (shared vocabulary) + store (persistence, post-v0.1)
+ingest -> correlate -> score -> [export]
 ```
 - Resource-centric normalized schema — the resource is primary,
   findings attach to it (many-to-many)

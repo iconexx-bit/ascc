@@ -9,7 +9,8 @@
 Выход: SARIF — только как export target, не как внутренняя модель
 
 ## Пайплайн и карта модулей
-ingest -> schema -> store -> correlate -> export
+Слои: schema/ (словарь, общий для всех стадий), store/ (персистентность)
+Стадии: ingest -> correlate -> score -> export
 
 - src/ascc/cli.py       — точка входа
 - src/ascc/ingest/      — парсеры сканеров, по модулю на сканер, общий интерфейс.
@@ -25,9 +26,8 @@ ingest -> schema -> store -> correlate -> export
   test_bridge_gap.py, test_correlate.py, test_correlate_confidence.py,
   test_cli.py, conftest.py
 
-Реализованы: ingest, schema, correlate. Пустые (только __init__.py): store, export.
-Порядок реализации: schema -> ingest -> store -> correlate -> export — соблюдён
-частично: correlate реализован раньше store.
+Порядок реализации: schema -> ingest -> correlate. store/ и export/ — post-v0.1.
+См. раздел «Архитектура» ниже: correlate реализован раньше store намеренно.
 
 ## Архитектура
 
