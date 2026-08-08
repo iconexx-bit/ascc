@@ -97,7 +97,7 @@ ingest -> correlate -> score -> [export]
   nothing about Trivy, Prowler, or Checkov
 
 **Planned**
-- PostgreSQL + pgvector will be used for storage and semantic
+- PostgreSQL + pgvector will eventually be used for storage and semantic
   correlation
 - SARIF is intended as an export-only target (CI/CD and IDE
   integration), never as the internal model
@@ -108,7 +108,7 @@ ingest -> correlate -> score -> [export]
 |---|---|
 | `schema/` | Identity resolution with provenance (`MatchKey`, `resolve()`), cluster bridging (`BridgeFact`, `ResourceCluster`) |
 | `ingest/` | Trivy, Prowler, Checkov parsers behind a common `ScannerParser` interface, plus a `sniff()`-based registry dispatcher |
-| `store/` | not started (PostgreSQL + pgvector planned) |
+| `store/` | not started (JSONL first, PostgreSQL + pgvector later) | 
 | `correlate/` | `IdentityBridge` (clustering) + `CorrelationRun` (tag-conflict resolution, `effective_confidence()`) |
 | `export/` | not started (SARIF planned) |
 

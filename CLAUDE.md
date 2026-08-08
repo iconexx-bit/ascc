@@ -17,9 +17,9 @@
   base.py, registry.py, trivy.py, checkov.py, prowler.py — реализованы
 - src/ascc/schema/      — нормализованная модель: Resource, Finding, связи.
   models.py, identity.py, taxonomy.py — реализованы
-- src/ascc/store/       — слой персистентности, PostgreSQL + pgvector. ПУСТО
 - src/ascc/correlate/   — ядро корреляции и рассуждения, суть проекта.
   bridge.py, run.py — реализованы
+- src/ascc/store/       — персистентность фактов. ПУСТО, см. «Архитектура»
 - src/ascc/export/      — рендер в SARIF. ПУСТО
 - tests/                — pytest, зеркалит модули: test_trivy.py, test_prowler.py,
   test_checkov.py, test_registry.py, test_identity.py, test_bridge.py,
@@ -59,7 +59,12 @@ fixtures/leaky_data_lake/ — эталонный сценарий:
 
 ## Архитектурные решения — приняты, не пересматривать
 - Схема: resource-centric normalized — ресурс первичен, findings навешиваются на него
-- Хранилище: PostgreSQL + pgvector
+- Хранилище: JSONL (v0.1) -> PostgreSQL + pgvector (когда упрёмся в объём
+  или понадобится семантический поиск).
+  Пересмотрено 2026-08-08. Rationale: доступ к фактам изолирован за
+  FactRepository, поэтому выбор бэкенда — замена драйвера, а не
+  архитектурное решение. Если кросс-прогонная корреляция не работает
+  на JSONL, она не заработает и на Postgres.
 - SARIF: исключительно на экспорт; внутри — собственная нормализованная модель
 
 ## Invariant: canonical execution path
@@ -220,5 +225,3 @@ would throw away the finding.
 - _record_resource дублируется в трёх парсерах. Поднять в
   ScannerParser отдельным рефакторингом — не смешивать с добавлением
   сканера.
-- pgvector и psycopg в зависимостях, store/ не написан. Убрать
-  до появления кода или оставить — решить сознательно, не забыть.

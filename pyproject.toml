@@ -7,9 +7,6 @@ requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "Yevhen Bashtanenko" }]
 dependencies = [
-    "psycopg[binary]>=3.1",
-    "pgvector>=0.3",
-    "pydantic>=2.5",
     "typer>=0.12",
     "rich>=13.7",
 ]
