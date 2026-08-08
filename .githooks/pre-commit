@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if ! uv lock --check >/dev/null 2>&1; then
+  echo "pre-commit: uv.lock устарел относительно pyproject.toml" >&2
+  echo "           исправить: uv lock && git add uv.lock" >&2
+  exit 1
+fi
+
+if ! uv sync --check --locked --extra dev >/dev/null 2>&1; then
+  echo "pre-commit: .venv рассинхронизирован с uv.lock" >&2
+  echo "           исправить: uv sync --extra dev" >&2
+  exit 1
+fi
+
+echo "pre-commit: lock и .venv согласованы"
