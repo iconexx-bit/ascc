@@ -21,6 +21,11 @@ ascc = "ascc.cli:app"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.pytest.ini_options]
+markers = [
+    "env: environment invariants (gate for all other tests)",
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"

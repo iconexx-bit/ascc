@@ -5,5 +5,12 @@
     "editor.codeActionsOnSave": {
       "source.organizeImports.ruff": "explicit"
     }
+  },
+  "files.associations": {
+    "justfile": "plaintext",
+    ".justfile": "plaintext"
+  },
+  "[plaintext]": {
+    "editor.formatOnSave": false
   }
 }
