@@ -24,3 +24,6 @@ test: test-env
 # Диагностика: что видит just
 show:
     just --dump
+    # Привести .venv в соответствие с lock (МУТИРУЕТ окружение)
+sync:
+    uv sync --locked --extra dev
