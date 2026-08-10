@@ -1,5 +1,6 @@
 import json
 import os
+from enum import IntEnum
 from pathlib import Path
 
 import typer
@@ -10,6 +11,17 @@ from ascc.correlate.run import correlate as run_correlate
 from ascc.correlate.run import effective_confidence
 from ascc.ingest.registry import parser_for
 from ascc.schema.models import ScanRun
+
+
+class ExitCode(IntEnum):
+    """Контракт кодов возврата. Публичный API для CI-интеграций."""
+
+    OK = 0
+    FINDINGS = 1  # зарезервирован под --fail-on
+    USAGE = 2  # выставляется Click
+    NO_INPUT = 3
+    INTERNAL = 70  # sysexits.h EX_SOFTWARE
+
 
 app = typer.Typer(name="ascc", help="AI Security Command Center")
 
@@ -55,7 +67,7 @@ def correlate(
 
     if not scan_runs:
         console.print(f"[red]No recognized scanner files in[/red] {input}")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=ExitCode.NO_INPUT)
 
     scanners = ", ".join(sorted({run.scanner for run in scan_runs}))
     console.print(
@@ -64,7 +76,11 @@ def correlate(
     for name, reason in skipped:
         console.print(f"[yellow]Skipping {name}: {reason}[/yellow]")
 
-    correlation_run = run_correlate(scan_runs)
+    try:
+        correlation_run = run_correlate(scan_runs)
+    except Exception:  # noqa: BLE001 — CLI boundary: any internal failure maps to INTERNAL
+        console.print_exception()
+        raise typer.Exit(code=ExitCode.INTERNAL) from None
 
     resources_table = Table(title="Resources")
     resources_table.add_column("Key")
