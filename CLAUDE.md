@@ -225,3 +225,9 @@ would throw away the finding.
 - _record_resource дублируется в трёх парсерах. Поднять в
   ScannerParser отдельным рефакторингом — не смешивать с добавлением
   сканера.
+
+## Status
+
+TOOLING FREEZE until v0.1.0-rc (2026-08-21).
+New tooling ideas go to ## Backlog as one-liners, not code.
+Exception: CI-blocking failures only.
