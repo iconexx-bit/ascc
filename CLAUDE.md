@@ -231,3 +231,26 @@ would throw away the finding.
 TOOLING FREEZE until v0.1.0-rc (2026-08-21).
 New tooling ideas go to ## Backlog as one-liners, not code.
 Exception: CI-blocking failures only.
+
+## Contracts
+- ExitCode(IntEnum): OK=0, FINDINGS=1 (reserved --fail-on), USAGE=2, NO_INPUT=3, INTERNAL=70.
+- CLI: `--store` is orthogonal to `--input`; absent `--store` ⇒ byte-identical to golden baseline.
+
+## Determinism
+- `ASCC_LLM=off` ⇒ byte-identical SARIF except message.markdown fields (CI-enforced).
+- results[] sorted in product code by (ruleId, resource_id, message).
+
+## Scoring
+- CVSS = base severity; KEV = hard override; EPSS = time-stamped ordering within buckets.
+- Base severity NEVER confidence-discounted; only correlation-derived modifiers are.
+- EPSS snapshots must carry date for reproducibility.
+
+## Store
+- effective_confidence(): pure function, computed at read time, never stored.
+- TTL: expiry downgrades/marks stale, never deletes (provenance). Table method→TTL: TODO.
+- Chain: InMemoryFactRepository → JsonlFactRepository → Postgres.
+
+## Kubernetes
+- Findings source only, NOT runtime. Ephemeral kind/k3d for fixtures.
+- IRSA PoC (one evening) = go/no-go, strictly after store/.
+- Deterministic bridges (1.0): providerID→EC2, IRSA→IAM Role, digest→ECR.
