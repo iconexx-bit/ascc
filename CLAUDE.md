@@ -253,6 +253,8 @@ would throw away the finding.
 - range-dns healthcheck: nslookup A vs dnsmasq AAAA — cosmetic, documented
 - agg for asciinema→GIF (cargo install --locked agg, or asciinema upload)
 - deny-pattern "Edit(./fixtures/**)" in .claude/settings.json not anchored to root, incidentally blocks tests/fixtures/ too — audit/anchor post-rc
+- audit stray pip/uv installs bypassing lockfile — venv drifted to 66
+  extra packages (llama-index stack) outside uv.lock on 18.08, caught by deps-check pre-commit hook before merg
 
 ## Status
 
@@ -284,6 +286,4 @@ Exception: CI-blocking failures + SARIF normalizer/golden baseline
 - IRSA PoC (one evening) = go/no-go, strictly after store/.
 - Deterministic bridges (1.0): providerID→EC2, IRSA→IAM Role, digest→ECR.
 
-- audit stray pip/uv installs bypassing lockfile — venv drifted to 66
-  extra packages (llama-index stack) outside uv.lock on 18.08, caught
-  by deps-check pre-commit hook before merge
+
