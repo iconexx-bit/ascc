@@ -252,6 +252,7 @@ would throw away the finding.
 - CLAUDE.md: document vectors A (ASCC eats untrusted findings) vs B (guards module detects injection in traffic) as separate threat models
 - range-dns healthcheck: nslookup A vs dnsmasq AAAA — cosmetic, documented
 - agg for asciinema→GIF (cargo install --locked agg, or asciinema upload)
+- deny-pattern "Edit(./fixtures/**)" in .claude/settings.json not anchored to root, incidentally blocks tests/fixtures/ too — audit/anchor post-rc
 
 ## Status
 
