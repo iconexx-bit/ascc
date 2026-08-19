@@ -1,0 +1,137 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "ascc",
+          "version": "0.0.1-dev",
+          "semanticVersion": "0.0.1-dev",
+          "informationUri": "https://example.invalid/ascc",
+          "rules": [
+            {"id": "ASCC-CHAIN-001"},
+            {"id": "ASCC-CHAIN-002"},
+            {"id": "ASCC-CHAIN-003"},
+            {"id": "ASCC-CORR-010"}
+          ]
+        }
+      },
+      "invocations": [
+        {
+          "executionSuccessful": true,
+          "startTimeUtc": "2026-08-19T03:14:07Z",
+          "endTimeUtc": "2026-08-19T03:14:08Z"
+        }
+      ],
+      "results": [
+        {
+          "ruleId": "ASCC-CORR-010",
+          "level": "warning",
+          "message": {
+            "text": "IAM role datalake-etl-role grants full admin (Action:*/Resource:*) and is attached to a publicly reachable instance."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/evg/dev/ascc/fixtures/leaky_data_lake/checkov.json"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "resource_id": "arn:aws:iam::123456789012:role/datalake-etl-role",
+            "confidence": 0.4
+          }
+        },
+        {
+          "ruleId": "ASCC-CHAIN-001",
+          "level": "error",
+          "guid": "5c6e1e2a-4b1b-4e9a-9b0a-1f2e3d4c5b6a",
+          "correlationGuid": "9f8e7d6c-5b4a-3c2d-1e0f-a1b2c3d4e5f6",
+          "message": {
+            "text": "Security group sg-0f9e8d7c6b5a43210 exposes port 22 to 0.0.0.0/0 on instance i-0a1b2c3d4e5f67890."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/evg/dev/ascc/fixtures/leaky_data_lake/prowler.json"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "resource_id": "arn:aws:ec2:us-east-1:123456789012:security-group/sg-0f9e8d7c6b5a43210",
+            "confidence": 1.0
+          }
+        },
+        {
+          "ruleId": "ASCC-CHAIN-002",
+          "level": "error",
+          "message": {
+            "text": "CVE-2021-44228 (Log4Shell, CRITICAL) on instance datalake-etl, bridged from Terraform address via path heuristic."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/evg/dev/ascc/fixtures/leaky_data_lake/trivy.json"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "resource_id": "arn:aws:ec2:us-east-1:123456789012:instance/i-0a1b2c3d4e5f67890",
+            "resolution_confidence": 0.5,
+            "bridge_confidence": 0.95,
+            "confidence": 0.475,
+            "note": "synthetic: illustrates the confidence-composition invariant (0.500 resolution x 0.950 bridge = 0.475 effective). Not a value observed from a real correlate run -- export/SARIF does not exist yet."
+          }
+        },
+        {
+          "ruleId": "ASCC-CHAIN-003",
+          "level": "warning",
+          "message": {
+            "text": "S3 bucket datalake-raw is publicly readable, unencrypted, tagged DataClassification=PII, reachable via the IAM role attached to datalake-etl."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/evg/dev/ascc/fixtures/leaky_data_lake/prowler.json"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "resource_id": "arn:aws:s3:::datalake-raw",
+            "confidence": 0.38,
+            "score_weight": 0.123456789
+          }
+        },
+        {
+          "ruleId": "ASCC-CORR-010",
+          "level": "note",
+          "message": {
+            "text": "aws_s3_bucket.datalake_raw (Checkov) and arn:aws:s3:::datalake-raw (Prowler) resolve to the same match_key."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/evg/dev/ascc/fixtures/leaky_data_lake/checkov.json"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "resource_id": "arn:aws:s3:::datalake-raw",
+            "confidence": 1.0
+          }
+        }
+      ]
+    }
+  ]
+}
