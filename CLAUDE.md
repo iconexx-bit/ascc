@@ -88,6 +88,23 @@ terminal (`python.terminal.activateEnvironment`, default `true`). This makes a
 bare `pytest` *work*, which is exactly what makes it dangerous. Convenience,
 not contract.
 
+## Invariant: TZ convention for day-boundary decisions
+
+`TZ='America/New_York' date` is the source of truth for any day-boundary
+decision — "today's scope" in a task, tooling-freeze/deadline dates,
+"commit tomorrow" style plans.
+
+Bare `date` / `date -u` are permitted ONLY for timestamps embedded in
+artifacts (logs, SARIF output, commit metadata) — never to decide what day
+it is for planning purposes.
+
+Rationale: a bare date carries no timezone and no time-of-day. Near a day
+boundary that ambiguity is exactly what breaks "today vs tomorrow"
+reasoning — a plan dated by the wrong day silently ships on the wrong day.
+Anchoring day-boundary decisions to one named TZ makes "today" a
+reproducible fact instead of whatever the local system clock or an
+upstream date field happens to report.
+
 ## Инварианты
 - Finding может ссылаться на несколько ресурсов — связь many-to-many
 - Дедупликация по ключу (resource_id, rule_id, scanner), НЕ по тексту описания
@@ -221,16 +238,27 @@ is exactly what this layer exists to surface — crashing on it
 would throw away the finding.
 
 ## Backlog
-
+<!-- one-liners only; no code until v0.1.0-rc tag (2026-08-21) -->
 - _record_resource дублируется в трёх парсерах. Поднять в
   ScannerParser отдельным рефакторингом — не смешивать с добавлением
   сканера.
+- SARIF-ingest: universal parser (SARIF as *input*) — cheap coverage for Semgrep/CodeQL; distinct from test-only normalizer
+- Neo4j export: Alias→CanonicalResource schema + constraints (see research w33); post-store only
+- Graph DB (Neo4j/Memgraph) evaluation — strictly after store/ layer, JSONL-first stands
+- MERGE batch-ingest playbook: UNWIND 500–2000/tx, dedupe pre-DB, nodes-before-edges, no index on last_seen
+- Prompt-injection hardening (vector A): delimit scanner-controlled strings in LLM prompts (XML tags + data-not-commands instruction)
+- ASCC-META-INJECTION rule: ingest-time detection of CL4R1T4S patterns inside findings — findings-scanning-findings, unique feature
+- Test: injection in resource tags/names CANNOT alter severity/confidence/identity (only message.markdown reachable)
+- CLAUDE.md: document vectors A (ASCC eats untrusted findings) vs B (guards module detects injection in traffic) as separate threat models
+- range-dns healthcheck: nslookup A vs dnsmasq AAAA — cosmetic, documented
+- agg for asciinema→GIF (cargo install --locked agg, or asciinema upload)
 
 ## Status
 
 TOOLING FREEZE until v0.1.0-rc (2026-08-21).
-New tooling ideas go to ## Backlog as one-liners, not code.
-Exception: CI-blocking failures only.
+New tooling ideas go to ## BACKLOG as one-liners, not code.
+Exception: CI-blocking failures + SARIF normalizer/golden baseline
+(tests/ only, sprint-critical-path per plan 17.08 — does not include export/).
 
 ## Contracts
 - ExitCode(IntEnum): OK=0, FINDINGS=1 (reserved --fail-on), USAGE=2, NO_INPUT=3, INTERNAL=70.
@@ -254,3 +282,4 @@ Exception: CI-blocking failures only.
 - Findings source only, NOT runtime. Ephemeral kind/k3d for fixtures.
 - IRSA PoC (one evening) = go/no-go, strictly after store/.
 - Deterministic bridges (1.0): providerID→EC2, IRSA→IAM Role, digest→ECR.
+

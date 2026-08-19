@@ -26,3 +26,4 @@ CLAUDE.local.md
 task.md
 task-trivy-resources.md
 *.deb
+llmguard-models-*.tar.gz
