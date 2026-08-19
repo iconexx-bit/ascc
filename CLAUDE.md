@@ -284,3 +284,6 @@ Exception: CI-blocking failures + SARIF normalizer/golden baseline
 - IRSA PoC (one evening) = go/no-go, strictly after store/.
 - Deterministic bridges (1.0): providerID→EC2, IRSA→IAM Role, digest→ECR.
 
+- audit stray pip/uv installs bypassing lockfile — venv drifted to 66
+  extra packages (llama-index stack) outside uv.lock on 18.08, caught
+  by deps-check pre-commit hook before merge
