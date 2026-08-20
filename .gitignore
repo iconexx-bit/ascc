@@ -27,3 +27,8 @@ task.md
 task-trivy-resources.md
 *.deb
 llmguard-models-*.tar.gz
+
+# Agent task specs — working artifacts, not versioned
+task.md
+tasks/
+
