@@ -276,6 +276,8 @@ would throw away the finding.
 
 ## Operating rules
 
+- just: every recipe line is a separate shell. Early `exit` aborts only that line — join with `; \` when short-circuiting.
+
 - Regex over diff lines (`^-[^-]`) is blind to deleted blank lines and markdown bullets. Use `git diff --numstat` column 2 as ground truth for deletions.
 
 ## Status
