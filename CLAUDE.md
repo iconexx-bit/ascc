@@ -1,6 +1,7 @@
 # ASCC — AI Security Command Center
 
 ## Что это
+
 Корреляционно-рассуждающий слой поверх сканеров облачной инфраструктуры.
 НЕ сканер. Не пиши код, обращающийся к облачным API напрямую —
 входные данные всегда приходят из внешних инструментов.
@@ -9,6 +10,7 @@
 Выход: SARIF — только как export target, не как внутренняя модель
 
 ## Пайплайн и карта модулей
+
 Слои: schema/ (словарь, общий для всех стадий), store/ (персистентность)
 Стадии: ingest -> correlate -> score -> export
 
@@ -32,6 +34,7 @@
 ## Архитектура
 
 Слои (общие для всех стадий):
+
 - schema/  — нормализованная модель. Словарь, на котором говорят все стадии.
 - store/   — персистентность. Repository на границах; ядро correlate чистое.
 
@@ -51,13 +54,16 @@ store/ — не технический долг, а следующая функ�
 возвращает кластеры. Источник фактов ему неизвестен.
 
 ## Тестовые данные
+
 fixtures/leaky_data_lake/ — эталонный сценарий:
+
 - trivy.json, prowler.json, checkov.json — сырые выводы трёх сканеров
 - README.md — описание сценария, читай его перед работой с фикстурами
 
 Фикстуры лежат в корне, не в tests/fixtures/ — tests/ их читает, но не владеет ими.
 
 ## Архитектурные решения — приняты, не пересматривать
+
 - Схема: resource-centric normalized — ресурс первичен, findings навешиваются на него
 - Хранилище: JSONL (v0.1) -> PostgreSQL + pgvector (когда упрёмся в объём
   или понадобится семантический поиск).
@@ -106,6 +112,10 @@ reproducible fact instead of whatever the local system clock or an
 upstream date field happens to report.
 
 ## Инварианты
+
+- `MatchKey.__str__` is a stability contract: it feeds `dedup_key` and SARIF
+  `partialFingerprints`. Changing the format or field set invalidates every
+  published fingerprint. New fields go to `Resolution`, never to `MatchKey`.
 - Finding может ссылаться на несколько ресурсов — связь many-to-many
 - Дедупликация по ключу (resource_id, rule_id, scanner), НЕ по тексту описания
 - Парсер каждого сканера — отдельный модуль в ingest/ с общим интерфейсом;
@@ -122,6 +132,7 @@ upstream date field happens to report.
   выглядит как данные и переживёт того, кто её вставил.
 
 ## Окружение и команды
+
 Пакетный менеджер — uv. Виртуальное окружение: .venv в корне.
 
     uv sync                       # установка зависимостей
@@ -132,6 +143,7 @@ upstream date field happens to report.
 Makefile отсутствует — команд make не существует, не предлагай их.
 
 ## Стиль работы
+
 - Python, type hints обязательны
 - Изменения схемы БД — только через миграции, никаких ручных ALTER
 - Перед реализацией нового подпакета — сначала план текстом, потом код
@@ -142,11 +154,13 @@ Makefile отсутствует — команд make не существует,
   CLAUDE.md — документация устаревает, дерево каталогов нет
 
 ## Чего НЕ делать
+
 - Не расширять scope до "добавим ещё один сканер" — это убивает дифференциацию
 - Не хардкодить маппинги правил конкретного сканера в correlate/ или schema/
-- Не трогать .venv/, .git/, __pycache__/ и содержимое fixtures/ без явной просьбы
+- Не трогать .venv/, .git/, **pycache**/ и содержимое fixtures/ без явной просьбы
 
 ## Тесты
+
 - Один тест — одно утверждение. Объединённый assert-блок при падении
   покажет первый и остановится, остальное скроется.
 - Тесты, фиксирующие ОГРАНИЧЕНИЯ (невозможность схлопнуть generated-id),
@@ -158,6 +172,7 @@ Makefile отсутствует — команд make не существует,
   может быть прав.
 
 ## Как формулировать задачи
+
 - Указывай файлы через @path, не заставляй сканировать репозиторий:
   разведка стоит столько же токенов, сколько работа.
 - ТЗ длиннее 40 строк класть в task.md и ссылаться @task.md —
@@ -169,6 +184,7 @@ When two scanners produce different keys for the same real resource, ASCC
 does **not** merge them. Neither `Resource` is modified, renamed, or absorbed.
 
 Instead a `ResourceCluster` records:
+
 - the set of keys believed to denote one resource
 - the bridge facts that justify that belief, each with method, confidence
   and the observation it came from
@@ -179,8 +195,8 @@ unanswerable. Bridging is data, not mutation — it can be recomputed,
 versioned, or switched off without touching ingest output.
 
 Rejected alternatives:
-- **merge**: destroys the losing key; a later scan producing it has nowhere
-  to land; irreversible if the bridge was wrong
+
+- **merge**: destroys the losing key; a later scan producing it has nowhere to land; irreversible if the bridge was wrong
 - **alias**: keeps keys but forces an arbitrary "canonical" choice, and the
   justification ends up scattered across pointers
 
@@ -238,11 +254,13 @@ is exactly what this layer exists to surface — crashing on it
 would throw away the finding.
 
 ## Backlog
+
 <!-- one-liners only; no code until v0.1.0-rc tag (2026-08-21) -->
-- _record_resource дублируется в трёх парсерах. Поднять в
+
+- `_record_resource` дублируется в трёх парсерах. Поднять в
   ScannerParser отдельным рефакторингом — не смешивать с добавлением
   сканера.
-- SARIF-ingest: universal parser (SARIF as *input*) — cheap coverage for Semgrep/CodeQL; distinct from test-only normalizer
+- SARIF-ingest: universal parser (SARIF as **input**) — cheap coverage for Semgrep/CodeQL; distinct from test-only normalizer
 - Neo4j export: Alias→CanonicalResource schema + constraints (see research w33); post-store only
 - Graph DB (Neo4j/Memgraph) evaluation — strictly after store/ layer, JSONL-first stands
 - MERGE batch-ingest playbook: UNWIND 500–2000/tx, dedupe pre-DB, nodes-before-edges, no index on last_seen
@@ -254,6 +272,11 @@ would throw away the finding.
 - agg for asciinema→GIF (cargo install --locked agg, or asciinema upload)
 - deny-pattern "Edit(./fixtures/**)" in .claude/settings.json not anchored to root, incidentally blocks tests/fixtures/ too — audit/anchor post-rc
 - audit stray pip/uv installs bypassing lockfile — venv drifted to 66 extra packages (llama-index stack) outside uv.lock on 18.08, caught by deps-check pre-commit hook before merge
+- identity: `MatchKey.__str__` is not injectively parseable (unescaped ':') — opaque-key-only contract
+
+## Operating rules
+
+- Regex over diff lines (`^-[^-]`) is blind to deleted blank lines and markdown bullets. Use `git diff --numstat` column 2 as ground truth for deletions.
 
 ## Status
 
@@ -263,24 +286,30 @@ Exception: CI-blocking failures + SARIF normalizer/golden baseline
 (tests/ only, sprint-critical-path per plan 17.08 — does not include export/).
 
 ## Contracts
+
 - ExitCode(IntEnum): OK=0, FINDINGS=1 (reserved --fail-on), USAGE=2, NO_INPUT=3, INTERNAL=70.
 - CLI: `--store` is orthogonal to `--input`; absent `--store` ⇒ byte-identical to golden baseline.
 
 ## Determinism
+
 - `ASCC_LLM=off` ⇒ byte-identical SARIF except message.markdown fields (CI-enforced).
 - results[] sorted in product code by (ruleId, resource_id, message).
 
 ## Scoring
+
 - CVSS = base severity; KEV = hard override; EPSS = time-stamped ordering within buckets.
 - Base severity NEVER confidence-discounted; only correlation-derived modifiers are.
 - EPSS snapshots must carry date for reproducibility.
 
 ## Store
+
 - effective_confidence(): pure function, computed at read time, never stored.
 - TTL: expiry downgrades/marks stale, never deletes (provenance). Table method→TTL: TODO.
 - Chain: InMemoryFactRepository → JsonlFactRepository → Postgres.
 
 ## Kubernetes
+
 - Findings source only, NOT runtime. Ephemeral kind/k3d for fixtures.
 - IRSA PoC (one evening) = go/no-go, strictly after store/.
 - Deterministic bridges (1.0): providerID→EC2, IRSA→IAM Role, digest→ECR.
+-

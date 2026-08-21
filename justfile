@@ -28,9 +28,10 @@ show:
 sync:
     uv sync --locked --extra dev
 
-    # fail if staged changes delete lines from CLAUDE.md
+# fail if staged changes delete lines from CLAUDE.md
 guard-claude-md:
     @if [ -n "${ALLOW_CLAUDE_MD_DELETE:-}" ]; then \
-       echo "guard-claude-md: bypassed by ALLOW_CLAUDE_MD_DELETE" >&2; exit 0; fi
-    @git diff --cached --numstat -- CLAUDE.md \
-      | awk '$2 != 0 { print "CLAUDE.md: " $2 " line(s) deleted — manual review required" > "/dev/stderr"; exit 1 }'
+        echo "guard-claude-md: bypassed by ALLOW_CLAUDE_MD_DELETE" >&2; exit 0; \
+     fi; \
+     git diff --cached --numstat -- CLAUDE.md \
+     | awk '$2 != 0 { print "CLAUDE.md: " $2 " line(s) deleted — manual review required" > "/dev/stderr"; exit 1 }'
