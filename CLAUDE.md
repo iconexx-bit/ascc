@@ -286,7 +286,7 @@ would throw away the finding.
 TOOLING FREEZE until v0.1.0-rc is tagged.
 New tooling ideas go to ## BACKLOG as one-liners, not code.
 Exception: CI-blocking failures + SARIF normalizer/golden baseline
-(tests/ only, sprint-critical-path per plan 17.08 — does not include export/).
+tests/test_sarif_export.py: structural asserts only (version "2.1.0", tool.driver.name, ruleId format, results sorted, partialFingerprints present). NO jsonschema — deferred to 0.1.1.
 
 ## Contracts
 
