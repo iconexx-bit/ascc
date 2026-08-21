@@ -274,6 +274,7 @@ would throw away the finding.
 - audit stray pip/uv installs bypassing lockfile — venv drifted to 66 extra packages (llama-index stack) outside uv.lock on 18.08, caught by deps-check pre-commit hook before merge
 - identity: `MatchKey.__str__` is not injectively parseable (unescaped ':') — opaque-key-only contract
 - deps: pyproject had two parallel dev mechanisms (optional-dependencies + dependency-groups); `pre-commit` was never installed by `just`. Consolidated to extras; evaluate PEP 735 migration post-rc.
+- docs: delegation-log table delimiter row violates MD060; align when markdownlint lands in CI
 
 ## Operating rules
 
@@ -281,12 +282,19 @@ would throw away the finding.
 
 - Regex over diff lines (`^-[^-]`) is blind to deleted blank lines and markdown bullets. Use `git diff --numstat` column 2 as ground truth for deletions.
 
+2026-08-21: jsonschema + SARIF schema landed inside 8abfab4, outside the
+20.08 rc cut. Not reverted — the same commit carries the severity mapping
+and the dev-deps consolidation fix. Schema-validation test stays deferred
+to 0.1.1. Lesson: check branch history for prior scope decisions before
+proposing scope.
+
 ## Status
 
 TOOLING FREEZE until v0.1.0-rc is tagged.
 New tooling ideas go to ## BACKLOG as one-liners, not code.
-Exception: CI-blocking failures + SARIF normalizer/golden baseline
-tests/test_sarif_export.py: structural asserts only (version "2.1.0", tool.driver.name, ruleId format, results sorted, partialFingerprints present). NO jsonschema — deferred to 0.1.1.
+Exception: CI-blocking failures only.
+rc scope (cut 2026-08-20): v0.1.0-rc ships to_sarif() + --output + determinism test.
+SARIF schema-validation and live-golden regeneration deferred to 0.1.1.
 
 ## Contracts
 
