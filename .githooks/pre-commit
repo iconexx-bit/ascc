@@ -9,5 +9,6 @@ command -v just >/dev/null 2>&1 || {
     exit 1
 }
 
+just guard-claude-md || exit 1
 just deps-check
 just lint
