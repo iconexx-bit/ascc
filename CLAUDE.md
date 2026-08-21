@@ -273,6 +273,7 @@ would throw away the finding.
 - deny-pattern "Edit(./fixtures/**)" in .claude/settings.json not anchored to root, incidentally blocks tests/fixtures/ too — audit/anchor post-rc
 - audit stray pip/uv installs bypassing lockfile — venv drifted to 66 extra packages (llama-index stack) outside uv.lock on 18.08, caught by deps-check pre-commit hook before merge
 - identity: `MatchKey.__str__` is not injectively parseable (unescaped ':') — opaque-key-only contract
+- deps: pyproject had two parallel dev mechanisms (optional-dependencies + dependency-groups); `pre-commit` was never installed by `just`. Consolidated to extras; evaluate PEP 735 migration post-rc.
 
 ## Operating rules
 
@@ -282,7 +283,7 @@ would throw away the finding.
 
 ## Status
 
-TOOLING FREEZE until v0.1.0-rc (2026-08-21).
+TOOLING FREEZE until v0.1.0-rc is tagged.
 New tooling ideas go to ## BACKLOG as one-liners, not code.
 Exception: CI-blocking failures + SARIF normalizer/golden baseline
 (tests/ only, sprint-critical-path per plan 17.08 — does not include export/).
