@@ -13,5 +13,8 @@
   },
   "[plaintext]": {
     "editor.formatOnSave": false
-  }
+  },
+  "github-actions.workflows.pinned.workflows": [
+    ".github/workflows/ci.yml"
+  ]
 }
