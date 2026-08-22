@@ -130,6 +130,16 @@ upstream date field happens to report.
 - Отсутствующее наблюдение — это None, а не суррогат. Сканер, не
   сообщивший время скана, не получает epoch или now(): подделка
   выглядит как данные и переживёт того, кто её вставил.
+- SARIF `level` mapping (SARIF allows only none|note|warning|error):
+  CRITICAL→error/9.5, HIGH→error/8.0, MEDIUM→warning/5.5,
+  LOW→note/3.0, INFO→none/0.0. The numeric is
+  `rule.properties.security-severity`, read by GitHub Code Scanning —
+  without it CRITICAL and HIGH are indistinguishable.
+  - SARIF `ruleId` = `{scanner}/{rule_id}` (e.g. `trivy/CVE-2021-44228`).
+  - Scanner-namespaced because scanners do not guarantee uniqueness among
+  themselves. No `ASCC-` prefix: the rule belongs to the scanner, not to
+  ASCC — tool identity lives in `tool.driver.name`. Format is a published
+  contract; changing it is breaking.
 
 ## Окружение и команды
 
