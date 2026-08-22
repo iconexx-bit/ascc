@@ -1,5 +1,6 @@
 import json
 import os
+import tempfile
 from enum import IntEnum
 from pathlib import Path
 
@@ -9,6 +10,7 @@ from rich.table import Table
 
 from ascc.correlate.run import correlate as run_correlate
 from ascc.correlate.run import effective_confidence
+from ascc.export.sarif import to_sarif
 from ascc.ingest.registry import parser_for
 from ascc.schema.models import ScanRun
 
@@ -46,6 +48,13 @@ def correlate(
         dir_okay=True,
         help="Path to a directory of scanner fixtures (Trivy/Prowler/Checkov JSON).",
     ),
+    output: Path | None = typer.Option(
+        None,
+        "--output",
+        dir_okay=False,
+        writable=True,
+        help="Write SARIF 2.1.0 log to PATH.",
+    ),
 ) -> None:
     console = _make_console()
     scan_runs: list[ScanRun] = []
@@ -81,6 +90,32 @@ def correlate(
     except Exception:  # noqa: BLE001 — CLI boundary: any internal failure maps to INTERNAL
         console.print_exception()
         raise typer.Exit(code=ExitCode.INTERNAL) from None
+
+    if output is not None:
+        doc = to_sarif(correlation_run)
+        tmp_name: str | None = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                "w",
+                dir=output.parent,
+                prefix=".ascc-",
+                suffix=".tmp",
+                delete=False,
+                encoding="utf-8",
+            ) as tmp:
+                tmp_name = tmp.name
+                json.dump(doc, tmp, sort_keys=True, ensure_ascii=False, indent=2)
+                tmp.write("\n")
+                tmp.flush()
+                os.fsync(tmp.fileno())
+            os.replace(tmp_name, output)
+            tmp_name = None
+        except OSError as exc:
+            Console(stderr=True).print(f"[red]Failed to write SARIF output:[/red] {exc}")
+            raise typer.Exit(code=ExitCode.INTERNAL) from None
+        finally:
+            if tmp_name is not None and os.path.exists(tmp_name):
+                os.unlink(tmp_name)
 
     resources_table = Table(title="Resources")
     resources_table.add_column("Key")
