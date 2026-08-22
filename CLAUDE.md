@@ -285,6 +285,7 @@ would throw away the finding.
 - identity: `MatchKey.__str__` is not injectively parseable (unescaped ':') — opaque-key-only contract
 - deps: pyproject had two parallel dev mechanisms (optional-dependencies + dependency-groups); `pre-commit` was never installed by `just`. Consolidated to extras; evaluate PEP 735 migration post-rc.
 - docs: delegation-log table delimiter row violates MD060; align when markdownlint lands in CI
+- docs: add docs/prompts/working-agreement.md (workflow contract + operating rules); mirror to userPreferences
 
 ## Operating rules
 
