@@ -16,5 +16,8 @@
   },
   "github-actions.workflows.pinned.workflows": [
     ".github/workflows/ci.yml"
-  ]
+  ],
+  "workbench.editor.enablePreviewFromQuickOpen": true,
+  "workbench.editor.highlightModifiedTabs": true,
+  "claudeCode.enableNewConversationShortcut": true
 }
