@@ -286,9 +286,15 @@ would throw away the finding.
 - deps: pyproject had two parallel dev mechanisms (optional-dependencies + dependency-groups); `pre-commit` was never installed by `just`. Consolidated to extras; evaluate PEP 735 migration post-rc.
 - docs: delegation-log table delimiter row violates MD060; align when markdownlint lands in CI
 - docs: add docs/prompts/working-agreement.md (workflow contract + operating rules); mirror to userPreferences
+- docs: code for the editor is given bare, never wrapped in a shell heredoc; long terminal output goes through a file
+- release: tags are created on ai-sec-ubuntu (UTC); dates are never backdated
+- tests: extend leaky_data_lake fixture with LOW/INFO findings (golden covers only error/warning)
+- tests: test_sarif_golden.py docstring claims src/ascc/export/ is empty — stale since ddfda8a
+- tooling: `just determinism` recipe wrapping the seed matrix
 
 ## Operating rules
 
+- Release provenance: tags are created on ai-sec-ubuntu (UTC). Dates are never backdated
 - just: every recipe line is a separate shell. Early `exit` aborts only that line — join with `; \` when short-circuiting.
 
 - Regex over diff lines (`^-[^-]`) is blind to deleted blank lines and markdown bullets. Use `git diff --numstat` column 2 as ground truth for deletions.
