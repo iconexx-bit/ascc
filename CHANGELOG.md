@@ -3,7 +3,7 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [SemVer](https://semver.org/).
 
-## [0.1.0-rc] — 2026-08-22
+## [0.1.0-rc] — 2026-08-23
 
 ### Added
 - Scanner parsers for Trivy, Prowler and Checkov behind a `sniff()` dispatch registry.
