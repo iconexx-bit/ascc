@@ -110,11 +110,17 @@ ingest -> correlate -> score -> [export]
 | `ingest/` | Trivy, Prowler, Checkov parsers behind a common `ScannerParser` interface, plus a `sniff()`-based registry dispatcher |
 | `store/` | not started (JSONL first, PostgreSQL + pgvector later) | 
 | `correlate/` | `IdentityBridge` (clustering) + `CorrelationRun` (tag-conflict resolution, `effective_confidence()`) |
-| `export/` | not started (SARIF planned) |
+| `export/` | `to_sarif()` — SARIF 2.1.0, deterministic result ordering, `--output PATH` with atomic write |
 
-10 test modules; CI runs lint, format check, and tests, plus a
-separate `secrets-scan` job (gitleaks); pre-commit hooks
+17 test modules; CI runs lint, format check, tests, and a determinism
+matrix, plus a separate `secrets-scan` job (gitleaks); pre-commit hooks
 (`.pre-commit-config.yaml`) run ruff and gitleaks locally.
+
+## Roadmap
+
+- `v0.1.1`: validation against the official SARIF 2.1.0 JSON schema;
+  live golden regeneration from CLI output
+- `store/`: JSONL first, then PostgreSQL + pgvector behind `FactRepository`
 
 ## Installation
 
