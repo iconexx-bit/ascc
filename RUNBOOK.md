@@ -142,7 +142,7 @@ and tells you it is an allow-list, not your network**) → PMTU blackhole → Do
 or a systemd timer.
 
 `net-diag.ps1` covers: elevation → VMMS + switch → vEthernet gateway IP → NAT object →
-**subnet overlap with the new Xfinity 10.0.0.x LAN** → VM reachability + service ports →
+**subnet overlap with the new ISP router <LAN_SUBNET>.x LAN** → VM reachability + service ports →
 portproxy staleness → firewall → host egress. `-Fix` recreates a missing NAT / gateway IP
 interactively.
 
@@ -178,7 +178,7 @@ What it buys you:
 - **supply-chain control**: one chokepoint to audit and, later, to enforce hash pinning against
 - great portfolio talking point: "I run an internal package proxy" is a real security-engineering signal
 
-Binds to `172.31.0.10:3141`, not `0.0.0.0` — it is an internal service.
+Binds to `<HOST_IP>:3141`, not `0.0.0.0` — it is an internal service.
 
 ---
 
