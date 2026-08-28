@@ -289,10 +289,12 @@ would throw away the finding.
 - docs: code for the editor is given bare, never wrapped in a shell heredoc; long terminal output goes through a file
 - release: tags are created on ai-sec-ubuntu (UTC); dates are never backdated
 - tests: extend leaky_data_lake fixture with LOW/INFO findings (golden covers only error/warning)
-- tests: test_sarif_golden.py docstring claims src/ascc/export/ is empty — stale since ddfda8a
 - tooling: `just determinism` recipe wrapping the seed matrix
 - README markdownlint cleanup — 26 warnings (MD060, MD040, MD022), after tag
 - README Status/Roadmap sync rule: schema validation moves to Status on v0.1.1
+- tests: synthetic.sarif.json uses legacy ruleId form ASCC-CHAIN-003; contract is {scanner}/{rule_id}
+- export: to_sarif() emits no confidence in properties — verify against Roadmap intent before v0.1.1
+- tests: v0.1.1 schema validation must use committed tests/schemas/ copy, never the remote $schema URL (no egress on ai-sec-ubuntu)
 
 ## Operating rules
 
