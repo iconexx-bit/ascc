@@ -291,6 +291,8 @@ would throw away the finding.
 - tests: extend leaky_data_lake fixture with LOW/INFO findings (golden covers only error/warning)
 - tests: test_sarif_golden.py docstring claims src/ascc/export/ is empty — stale since ddfda8a
 - tooling: `just determinism` recipe wrapping the seed matrix
+- README markdownlint cleanup — 26 warnings (MD060, MD040, MD022), after tag
+- README Status/Roadmap sync rule: schema validation moves to Status on v0.1.1
 
 ## Operating rules
 
