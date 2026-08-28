@@ -87,7 +87,7 @@
             "resolution_confidence": 0.5,
             "bridge_confidence": 0.95,
             "confidence": 0.475,
-            "note": "synthetic: illustrates the confidence-composition invariant (0.500 resolution x 0.950 bridge = 0.475 effective). Not a value observed from a real correlate run -- export/SARIF does not exist yet."
+            "note": "synthetic: illustrates the confidence-composition invariant (0.500 resolution x 0.950 bridge = 0.475 effective). Hand-authored, not observed from a real correlate run."
           }
         },
         {

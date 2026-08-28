@@ -1,10 +1,9 @@
 """Golden tests for tests/sarif_normalizer.py against a synthetic SARIF fixture.
 
 The fixture (tests/data/synthetic.sarif.json) is hand-written, not produced by
-a real `ascc correlate` run -- SARIF export does not exist yet (src/ascc/export/
-is empty). It exists to exercise every normalization rule in one document:
-volatile invocations, driver version, guids, float precision, absolute repo
-paths, and out-of-order results.
+a real `ascc correlate` run: no single real run exercises every normalization
+rule at once. It covers volatile invocations, driver version, guids, float
+precision, absolute repo paths, and out-of-order results.
 """
 
 import json
