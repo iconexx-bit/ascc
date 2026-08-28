@@ -295,6 +295,7 @@ would throw away the finding.
 - tests: synthetic.sarif.json uses legacy ruleId form ASCC-CHAIN-003; contract is {scanner}/{rule_id}
 - export: to_sarif() emits no confidence in properties — verify against Roadmap intent before v0.1.1
 - tests: v0.1.1 schema validation must use committed tests/schemas/ copy, never the remote $schema URL (no egress on ai-sec-ubuntu)
+- tooling: guard-claude-md should scope deletion check outside ## Backlog (crossing off done items is legitimate)
 
 ## Operating rules
 
