@@ -267,9 +267,7 @@ would throw away the finding.
 
 <!-- one-liners only; no code until v0.1.0-rc tag (2026-08-21) -->
 
-- `_record_resource` дублируется в трёх парсерах. Поднять в
-  ScannerParser отдельным рефакторингом — не смешивать с добавлением
-  сканера.
+- `_record_resource` It’s duplicated across three parsers. Move it into ScannerParser as a separate refactoring — do not mix this change with adding the scanner.
 - SARIF-ingest: universal parser (SARIF as **input**) — cheap coverage for Semgrep/CodeQL; distinct from test-only normalizer
 - Neo4j export: Alias→CanonicalResource schema + constraints (see research w33); post-store only
 - Graph DB (Neo4j/Memgraph) evaluation — strictly after store/ layer, JSONL-first stands
