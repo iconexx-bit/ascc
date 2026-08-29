@@ -312,7 +312,7 @@ proposing scope.
 
 ## Status
 
-TOOLING FREEZE until v0.1.0-rc is tagged.
+TOOLING FREEZE lifted at v0.1.0-rc (2026-08-23, commit bc809806). Store/, guards/ work now unblocked.
 New tooling ideas go to ## BACKLOG as one-liners, not code.
 Exception: CI-blocking failures only.
 rc scope (cut 2026-08-20): v0.1.0-rc ships to_sarif() + --output + determinism test.
