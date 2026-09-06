@@ -55,7 +55,15 @@ def correlate(
         writable=True,
         help="Write SARIF 2.1.0 log to PATH.",
     ),
+    store: Path | None = typer.Option(
+        None,
+        "--store",
+        file_okay=False,
+        dir_okay=True,
+        help="Path to a fact store (reserved; not yet implemented).",
+    ),
 ) -> None:
+    del store  # no-op until FactRepository lands
     console = _make_console()
     scan_runs: list[ScanRun] = []
     skipped: list[tuple[str, str]] = []
