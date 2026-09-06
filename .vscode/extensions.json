@@ -1,0 +1,17 @@
+{
+    "recommendations": [
+      "anthropic.claude-code",
+      "charliermarsh.ruff",
+      "ms-python.python",
+      "redhat.vscode-yaml"
+    ],
+    "unwantedRecommendations": [
+      "sixth.sixth-ai",
+      "vivswan.litellm-vscode-chat",
+      "huggingface.huggingface-vscode-chat",
+      "ms-azuretools.vscode-azure-github-copilot",
+      "mcright.auto-save",
+      "github.copilot",
+      "github.copilot-chat"
+    ]
+  }
