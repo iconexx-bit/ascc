@@ -4,12 +4,7 @@
     "editor.defaultFormatter": "charliermarsh.ruff",
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
-      "source.organizeImports.ruff": "explicit"
-    }
-  },
-  "files.associations": {
-    "justfile": "plaintext",
-    ".justfile": "plaintext"
+      "source.organizeImports.ruff": "explicit"}
   },
   "[plaintext]": {
     "editor.formatOnSave": false
@@ -19,5 +14,21 @@
   ],
   "workbench.editor.enablePreviewFromQuickOpen": true,
   "workbench.editor.highlightModifiedTabs": true,
-  "claudeCode.enableNewConversationShortcut": true
+  "claudeCode.enableNewConversationShortcut": true,
+"files.associations": {
+  "justfile": "plaintext",
+  ".justfile": "plaintext",
+  "Justfile": "plaintext"
+},
+"files.autoSave": "onFocusChange",
+"files.readonlyInclude": {
+  "**/*.cast": true,
+  "tests/golden/**": true
+},
+"files.eol": "\n",
+"files.insertFinalNewline": true,
+"files.trimTrailingWhitespace": true,
+"[json]": { "files.trimTrailingWhitespace": false },
+"search.exclude": { "**/.venv": true, "**/.ruff_cache": true },
+"files.watcherExclude": { "**/.venv/**": true }
 }
