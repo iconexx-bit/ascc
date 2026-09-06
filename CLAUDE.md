@@ -310,11 +310,17 @@ proposing scope.
 
 ## Status
 
-TOOLING FREEZE lifted at v0.1.0-rc (2026-08-23, commit bc809806). Store/, guards/ work now unblocked.
+2026-08-23: TOOLING FREEZE lifted at v0.1.0-rc (commit bc809806).
 New tooling ideas go to ## BACKLOG as one-liners, not code.
 Exception: CI-blocking failures only.
 rc scope (cut 2026-08-20): v0.1.0-rc ships to_sarif() + --output + determinism test.
 SARIF schema-validation and live-golden regeneration deferred to 0.1.1.
+ACTIVE FREEZE (scoped, 2026-09-06): no chore(tooling) commits until
+the JsonlFactRepository conformance suite is green. Rationale: the
+previous unscoped lift was followed by three consecutive tooling
+commits and zero src/ commits for three weeks.
+New tooling ideas go to ## BACKLOG as one-liners, not code.
+Exception: CI-blocking failures only.
 
 ## Contracts
 
@@ -337,6 +343,11 @@ SARIF schema-validation and live-golden regeneration deferred to 0.1.1.
 - effective_confidence(): pure function, computed at read time, never stored.
 - TTL: expiry downgrades/marks stale, never deletes (provenance). Table method→TTL: TODO.
 - Chain: InMemoryFactRepository → JsonlFactRepository → Postgres.
+- `--store` is a directory (file_okay=False); never a single file.
+- `--store` accepts a non-existent path; the directory is NOT created
+  by the CLI. writable=True to be added when FactRepository lands.
+- Invariant: `--store` is output-neutral — SARIF bytes identical with
+  and without it. Guarded by tests/test_store_invariant.py.
 
 ## Kubernetes
 
