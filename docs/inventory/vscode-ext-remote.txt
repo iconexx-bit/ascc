@@ -1,0 +1,15 @@
+anthropic.claude-code@2.1.263
+anthropic.url-content-opener@0.0.2
+charliermarsh.ruff@2026.78.0
+davidanson.vscode-markdownlint@0.62.1
+dotjoshjohnson.xml@2.5.1
+eamodio.gitlens@19.1.0
+esbenp.prettier-vscode@12.4.0
+github.github-vscode-theme@6.3.5
+github.vscode-github-actions@0.32.3
+github.vscode-pull-request-github@0.164.0
+ms-python.debugpy@2026.6.0
+ms-python.python@2026.4.0
+ms-python.vscode-pylance@2026.3.1
+ms-python.vscode-python-envs@1.36.0
+redhat.vscode-yaml@1.24.0
