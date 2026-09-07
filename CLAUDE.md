@@ -294,6 +294,11 @@ would throw away the finding.
 - export: to_sarif() emits no confidence in properties — verify against Roadmap intent before v0.1.1
 - tests: v0.1.1 schema validation must use committed tests/schemas/ copy, never the remote $schema URL (no egress on ai-sec-ubuntu)
 - tooling: guard-claude-md should scope deletion check outside ## Backlog (crossing off done items is legitimate)
+- Settings Sync scope: Extensions/MCP/Profiles excluded — declarative policy owns extensions
+- ResourceRelation: implement red-first alongside the LLM edge track
+  (method="llm", confidence<=0.3, excluded from Union-Find). Fact.key is
+  a variable-length tuple — a relation fits as (src, dst) with no schema
+  change. Verified 2026-09-07, no rework risk.
 
 ## Operating rules
 
