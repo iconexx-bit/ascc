@@ -1,9 +1,14 @@
 """Red tests for ascc.store.policy — TTL & confidence policy contract.
 
 Scope: the pure policy layer only. No repository, no I/O, no clock.
-Every test uses year-2000 dates: an implementation that reaches for
-datetime.now() internally fails test_fresh_before_ttl deterministically,
-not 99.9% of the time.
+
+Method literals and confidence values are ground truth, read from:
+  src/ascc/schema/identity.py  (arn_parse, terraform_*, filesystem_path_heuristic)
+  src/ascc/ingest/prowler.py   (observed_together)
+"llm" is a forward contract: no producer exists yet.
+
+Every date is year-2000: an implementation that reaches for datetime.now()
+internally fails test_fresh_before_ttl deterministically, not 99.9% of the time.
 """
 
 from __future__ import annotations
@@ -22,27 +27,40 @@ from ascc.store.policy import (
 V = datetime(2000, 1, 1, tzinfo=UTC)
 DAY = timedelta(days=1)
 
+SOURCE_BOUND = (
+    "terraform_natural_name",
+    "terraform_generated_id_unbridged",
+    "filesystem_path_heuristic",
+    "llm",
+)
+RESOLUTION_METHODS = (
+    "arn_parse",
+    "terraform_natural_name",
+    "filesystem_path_heuristic",
+    "terraform_generated_id_unbridged",
+)
+
 
 # --- boundary --------------------------------------------------------------
 
 
 def test_fresh_before_ttl() -> None:
     """Hidden-clock detector: a year-2000 fact one day old is fresh."""
-    assert is_stale("terraform", V, V + DAY) is False
+    assert is_stale("terraform_natural_name", V, V + DAY) is False
 
 
 def test_stale_exactly_at_ttl() -> None:
     """Boundary is >=: at exactly ttl the fact is already stale."""
-    assert is_stale("terraform", V, V + timedelta(days=30)) is True
+    assert is_stale("terraform_natural_name", V, V + timedelta(days=30)) is True
 
 
 def test_stale_after_ttl() -> None:
-    assert is_stale("terraform", V, V + timedelta(days=31)) is True
+    assert is_stale("terraform_natural_name", V, V + timedelta(days=31)) is True
 
 
 def test_never_stale_when_ttl_is_none() -> None:
-    """arn bridges compare strings; string comparison does not age."""
-    assert is_stale("arn", V, V + timedelta(days=36500)) is False
+    """arn_parse compares strings; string comparison does not age."""
+    assert is_stale("arn_parse", V, V + timedelta(days=36500)) is False
 
 
 # --- contracts -------------------------------------------------------------
@@ -51,7 +69,7 @@ def test_never_stale_when_ttl_is_none() -> None:
 def test_unknown_method_raises() -> None:
     """Fail loud: a new method without a policy entry is a bug, not a default."""
     with pytest.raises(KeyError):
-        is_stale("kubernetes", V, V + DAY)
+        is_stale("kubernetes_owner_ref", V, V + DAY)
 
 
 @pytest.mark.parametrize(
@@ -64,17 +82,17 @@ def test_unknown_method_raises() -> None:
 def test_naive_datetime_rejected(verified_at: datetime, as_of: datetime) -> None:
     """aware/naive mixing is the classic source of 'stale after 3 hours'."""
     with pytest.raises(ValueError):
-        is_stale("terraform", verified_at, as_of)
+        is_stale("terraform_natural_name", verified_at, as_of)
 
 
 def test_as_of_before_verified_at_is_not_stale() -> None:
     """Clock skew between CI agents is real; negative age is not expiry."""
-    assert is_stale("terraform", V, V - timedelta(days=365)) is False
+    assert is_stale("terraform_natural_name", V, V - timedelta(days=365)) is False
 
 
 def test_is_stale_is_pure() -> None:
     """Same inputs, same output — no internal state, no clock."""
-    args = ("terraform", V, V + timedelta(days=15))
+    args = ("terraform_natural_name", V, V + timedelta(days=15))
     assert is_stale(*args) == is_stale(*args)
 
 
@@ -92,13 +110,41 @@ def test_policy_version_is_declared() -> None:
     assert TTL_POLICY_VERSION >= 1
 
 
-def test_max_confidence_is_monotonic() -> None:
-    """Trust ordering: arn >= terraform >= path >= llm. Ties are allowed."""
+def test_ttl_and_confidence_cover_same_methods() -> None:
+    assert set(TTL) == set(MAX_CONFIDENCE)
+
+
+def test_every_known_method_has_a_policy() -> None:
+    """Ground truth from grep over src/ascc/. A sixth producer must land here."""
+    known = {*RESOLUTION_METHODS, "observed_together", "llm"}
+    assert known <= set(TTL)
+
+
+def test_max_confidence_matches_resolution_tiers() -> None:
+    """Mirrors src/ascc/schema/identity.py — drift here is a real defect."""
+    assert MAX_CONFIDENCE["arn_parse"] == 1.0
+    assert MAX_CONFIDENCE["terraform_natural_name"] == 1.0
+    assert MAX_CONFIDENCE["filesystem_path_heuristic"] == 0.5
+    assert MAX_CONFIDENCE["terraform_generated_id_unbridged"] == 0.4
+
+
+def test_max_confidence_matches_bridge_tier() -> None:
+    """Mirrors src/ascc/ingest/prowler.py — the only BridgeFact producer."""
+    assert MAX_CONFIDENCE["observed_together"] == 0.95
+
+
+def test_resolution_confidence_is_monotonic() -> None:
+    """Trust ordering holds WITHIN resolution methods.
+
+    observed_together (0.95) is a BridgeFact confidence — a different factor in
+    effective_confidence (run.py: resolution.confidence * bridge_confidence).
+    Comparing the two populations would be meaningless.
+    """
     assert (
-        MAX_CONFIDENCE["arn"]
-        >= MAX_CONFIDENCE["terraform"]
-        >= MAX_CONFIDENCE["path"]
-        >= MAX_CONFIDENCE["llm"]
+        MAX_CONFIDENCE["arn_parse"]
+        == MAX_CONFIDENCE["terraform_natural_name"]
+        >= MAX_CONFIDENCE["filesystem_path_heuristic"]
+        >= MAX_CONFIDENCE["terraform_generated_id_unbridged"]
     )
 
 
@@ -107,18 +153,27 @@ def test_llm_ceiling_is_capped() -> None:
     assert MAX_CONFIDENCE["llm"] <= 0.3
 
 
-def test_ttl_and_confidence_cover_same_methods() -> None:
-    assert set(TTL) == set(MAX_CONFIDENCE)
+# --- volatility axis -------------------------------------------------------
 
 
 def test_source_bound_methods_share_one_ttl() -> None:
     """TTL models source volatility, not method trust.
 
-    terraform, path and llm all derive from the repository tree, so they
-    share a TTL. A divergence here would be trust smuggled into the
-    volatility axis — the exact double-counting the contract forbids.
+    All four derive from the repository tree, so they share a TTL despite
+    confidences of 1.0, 0.5, 0.4 and 0.3. A divergence here would be trust
+    smuggled into the volatility axis — the double-counting the contract forbids.
     """
-    source_bound = ("terraform", "path", "llm")
-    ttls = {ttl_for(m) for m in source_bound}
+    ttls = {ttl_for(m) for m in SOURCE_BOUND}
     assert len(ttls) == 1
     assert None not in ttls
+
+
+def test_run_bound_ttl_is_shorter_than_source_bound() -> None:
+    """observed_together derives from a scanner run artefact, not the repo tree.
+
+    A new scan supersedes it sooner than a file edit would. This is an argument
+    about how fast the source changes — its confidence (0.95) is high.
+    """
+    run_bound = ttl_for("observed_together")
+    assert run_bound is not None
+    assert run_bound < ttl_for("terraform_natural_name")
