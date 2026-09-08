@@ -299,6 +299,12 @@ would throw away the finding.
   (method="llm", confidence<=0.3, excluded from Union-Find). Fact.key is
   a variable-length tuple — a relation fits as (src, dst) with no schema
   change. Verified 2026-09-07, no rework risk.
+- volatility_class как первичный ключ политики вместо method
+- source_digest как жёсткий инвалидатор (слот в Fact есть с v1, логики нет)
+- Jsonl append-only + история наблюдений + confirmations/contradicted_by
+- корроборация llm <-> детерминированный источник
+- перенести словарь методов в store, correlate импортирует (сейчас — cross-import в тестах)
+- проверить резолвер terraform на for_each/count фикстуре
 
 ## Operating rules
 
@@ -346,13 +352,57 @@ Exception: CI-blocking failures only.
 ## Store
 
 - effective_confidence(): pure function, computed at read time, never stored.
-- TTL: expiry downgrades/marks stale, never deletes (provenance). Table method→TTL: TODO.
+- TTL: expiry downgrades/marks stale, never deletes (provenance).
 - Chain: InMemoryFactRepository → JsonlFactRepository → Postgres.
 - `--store` is a directory (file_okay=False); never a single file.
 - `--store` accepts a non-existent path; the directory is NOT created
   by the CLI. writable=True to be added when FactRepository lands.
 - Invariant: `--store` is output-neutral — SARIF bytes identical with
   and without it. Guarded by tests/test_store_invariant.py.
+
+### Freshness policy (v1)
+
+- TTL models SOURCE VOLATILITY, not method trust and not recomputation cost.
+  Trust lives in confidence. Double-counting is forbidden: any TTL other than
+  30d for a source-bound method needs an argument about how fast the source
+  changes, otherwise it is trust smuggled into the volatility axis.
+- TTL is resolved at read time from a versioned constant
+  (ascc.store.policy, TTL_POLICY_VERSION). Changing numbers ⇒ no data migration.
+- The repository does NOT know time: put(fact) -> None, get(key) -> Fact | None.
+  Neither as_of nor now appears in any FactRepository signature.
+- verified_at is set by the caller inside Fact; ascc.store never writes it.
+- stale is NOT stored and is NOT a Fact field:
+  is_stale(method, verified_at, as_of) — pure, primitives only.
+  Boundary: stale when age >= ttl. as_of < verified_at ⇒ not stale
+  (falls out of the formula, no special branch).
+- effective_confidence() v1 == fact.confidence. stale is an orthogonal flag,
+  never a multiplier. In v1 is_stale has no consumers — that is expected.
+- Fact key includes method: (method, subject, predicate). Without it an
+  llm fact (0.3) would overwrite an arn fact (1.0).
+  If the key derives from MatchKey.__str__, the MatchKey stability contract
+  extends to the on-disk store format.
+- put overwrites by key; observation history is not kept in v1 (see Backlog).
+  The provenance invariant covers TTL only.
+- InMemory (overwrite) and Jsonl (append-only, last wins) are observationally
+  equivalent through the ABC ⇒ one shared conformance suite.
+- All datetimes are aware UTC. naive ⇒ raises, both in Fact and in is_stale.
+- ascc.store is stdlib-only: no DB drivers, and it never imports ascc.correlate.
+  The reverse direction (correlate → store) is allowed.
+- method=terraform ⇒ natural name statically resolved. Indexed addresses
+  (for_each/count) and unresolved variables MUST NOT emit a tier-1.0 bridge.
+- ШАГ 3 lands policy/Fact/ABC/InMemory only. CLI wiring (including
+  writable=True) is a separate step; `--store` stays output-neutral.
+
+| method    | max_conf | TTL  | class        | invalidator (planned)      |
+|-----------|----------|------|--------------|----------------------------|
+| arn       | 1.0      | None | immutable    | —                          |
+| terraform | 1.0      | 30d  | source_bound | source_digest (v2)         |
+| path      | 0.5      | 30d  | source_bound | source_digest (v2)         |
+| llm       | 0.3      | 30d  | source_bound | sha256(prompt+input+model) |
+
+TTL takes two distinct values across four methods — evidence that
+volatility_class is already latent in the data. The key stays `method`:
+with two values a richer key adds no information.
 
 ## Kubernetes
 
