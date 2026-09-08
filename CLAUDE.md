@@ -340,6 +340,12 @@ previous unscoped lift was followed by three consecutive tooling
 commits and zero src/ commits for three weeks.
 New tooling ideas go to ## BACKLOG as one-liners, not code.
 Exception: CI-blocking failures only.
+Progress 2026-09-08: the conformance suite exists and is parametrised over
+implementations (tests/store/test_repository_conformance.py, 19 tests).
+InMemoryFactRepository passes it as of 3f821af; policy.py and memory.py
+landed with 37 contract tests in tests/store/, 170 total.
+JsonlFactRepository remains — one line in IMPLEMENTATIONS plus the deferred
+reload-preserves-observed_at test — so the freeze holds by its own terms.
 
 ## Contracts
 
