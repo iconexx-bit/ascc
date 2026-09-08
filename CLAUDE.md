@@ -299,6 +299,20 @@ would throw away the finding.
   (method="llm", confidence<=0.3, excluded from Union-Find). Fact.key is
   a variable-length tuple — a relation fits as (src, dst) with no schema
   change. Verified 2026-09-07, no rework risk.
+- volatility_class как первичный ключ политики вместо method
+- source_digest как жёсткий инвалидатор (слот в Fact есть с v1, логики нет)
+- Jsonl append-only + история наблюдений + confirmations/contradicted_by
+- корроборация llm <-> детерминированный источник
+- перенести словарь методов в store, correlate импортирует (сейчас — cross-import в тестах)
+- проверить резолвер terraform на for_each/count фикстуре
+- store: observed_at vs verified_at/last_confirmed — split when confirmations land
+- store: source_digest slot in Fact (additive, frozen dataclass with default)
+- store: put() rejects a naive `now` only via TypeError from the comparison;
+  consider an explicit aware check for symmetry with is_stale
+- guard-claude-md: detect duplicate contract blocks, not only deletions
+- git: one commit, one fresh message file (/tmp/msg-N.txt); never reuse or append
+- post-edit auto-formatter strips unused imports mid-write; re-run ruff after
+  adding type hints, not before
 
 ## Operating rules
 
@@ -326,6 +340,12 @@ previous unscoped lift was followed by three consecutive tooling
 commits and zero src/ commits for three weeks.
 New tooling ideas go to ## BACKLOG as one-liners, not code.
 Exception: CI-blocking failures only.
+Progress 2026-09-08: the conformance suite exists and is parametrised over
+implementations (tests/store/test_repository_conformance.py, 19 tests).
+InMemoryFactRepository passes it as of 3f821af; policy.py and memory.py
+landed with 37 contract tests in tests/store/, 170 total.
+JsonlFactRepository remains — one line in IMPLEMENTATIONS plus the deferred
+reload-preserves-observed_at test — so the freeze holds by its own terms.
 
 ## Contracts
 
@@ -346,13 +366,91 @@ Exception: CI-blocking failures only.
 ## Store
 
 - effective_confidence(): pure function, computed at read time, never stored.
-- TTL: expiry downgrades/marks stale, never deletes (provenance). Table method→TTL: TODO.
+- TTL: expiry downgrades/marks stale, never deletes (provenance).
 - Chain: InMemoryFactRepository → JsonlFactRepository → Postgres.
 - `--store` is a directory (file_okay=False); never a single file.
 - `--store` accepts a non-existent path; the directory is NOT created
   by the CLI. writable=True to be added when FactRepository lands.
 - Invariant: `--store` is output-neutral — SARIF bytes identical with
   and without it. Guarded by tests/test_store_invariant.py.
+
+### Freshness policy (v1)
+
+- TTL models SOURCE VOLATILITY, not method trust and not recomputation cost.
+  Trust lives in confidence. Double-counting is forbidden: any TTL other than
+  30d for a source-bound method needs an argument about how fast the source
+  changes, otherwise it is trust smuggled into the volatility axis.
+- TTL is resolved at read time from a versioned constant
+  (ascc.store.policy, TTL_POLICY_VERSION). Changing numbers ⇒ no data migration.
+- The repository never READS the clock: `now` is keyword-only and mandatory on
+   put/get/all, injected by the caller (FactRepository, 5056b89). Machine-checked
+   by tests/test_fact_repository.py, both behaviourally and by source grep.
+- The TTL anchor is Fact.observed_at. Re-observation means a new put with a new
+   observed_at; put MUST NOT rewrite it, or Jsonl reload would launder freshness.
+- Fact.stale is a stored field only in the sense that it defaults to False.
+   Its authoritative value is rendered at read: get/all return
+   replace(fact, stale=is_stale(fact.method, fact.observed_at, now)).
+   Policy is the single owner; no repository re-implements expiry.
+- is_stale(method, observed_at, as_of) — pure, primitives only.
+- Validation lives in put(), never in Fact.__post_init__: unknown method
+   raises KeyError, confidence above MAX_CONFIDENCE[method] raises ValueError,
+   observed_at > now raises ValueError. Fact stays a dumb record.
+- Fact.key does NOT contain method — they are separate fields, and get(key)
+   returns one fact per key. A producer that needs facts from different methods
+   about the same subject to coexist MUST put the method into the key tuple.
+- Source-grep guard: tests/test_fact_repository.py greps src/ascc/store/ for
+   "datetime.now", "utcnow", "time.time", "time.monotonic" outside # comments.
+   Docstrings and string literals count. Do not name these APIs inside the package.
+- Layer provenance: Fact + FactRepository ABC in 5056b89 (models.py, not
+   fact.py); policy.py and InMemoryFactRepository in ШАГ 3.
+- Boundary: stale when age >= ttl. as_of < observed_at ⇒ not stale
+  (falls out of the formula, no special branch).
+- ascc.store introduces NO effective_confidence of its own. fact.confidence
+   is used as stored; stale is an orthogonal flag, never a multiplier.
+   In v1 is_stale has no consumers — that is expected.
+- correlate.run.effective_confidence (resolution × bridge) is a DIFFERENT
+   function, out of scope for the store layer and MUST NOT be modified.
+- Fact.key does NOT contain method — they are separate fields, and get(key)
+  returns one fact per key. A producer that needs facts from different methods
+  about the same subject MUST put the method into the key tuple; key is
+  variable-length, so no schema change is required.
+  If a key element derives from MatchKey.__str__, the MatchKey stability
+  contract extends to the on-disk store format.
+- put overwrites by key; observation history is not kept in v1 (see Backlog).
+  The provenance invariant covers TTL only.
+- InMemory (overwrite) and Jsonl (append-only, last wins) are observationally
+  equivalent through the ABC ⇒ one shared conformance suite.
+- All datetimes are aware UTC. naive ⇒ raises, both in Fact and in is_stale.
+- ascc.store is stdlib-only: no DB drivers, and it never imports ascc.correlate.
+  The reverse direction (correlate → store) is allowed.
+- method=terraform ⇒ natural name statically resolved. Indexed addresses
+  (for_each/count) and unresolved variables MUST NOT emit a tier-1.0 bridge.
+- ШАГ 3 lands policy/Fact/ABC/InMemory only. CLI wiring (including
+  writable=True) is a separate step; `--store` stays output-neutral.
+
+| method                           | max_conf | TTL  | volatility   | invalidator (planned)      |
+|----------------------------------|----------|------|--------------|----------------------------|
+| arn_parse                        | 1.0      | None | immutable    | —                          |
+| terraform_natural_name           | 1.0      | 30d  | source_bound | source_digest (v2)         |
+| terraform_generated_id_unbridged | 0.4      | 30d  | source_bound | source_digest (v2)         |
+| filesystem_path_heuristic        | 0.5      | 30d  | source_bound | source_digest (v2)         |
+| observed_together                | 0.95     | 7d   | run_bound    | scan run digest (v2)       |
+| llm                              | 0.3      | 30d  | source_bound | sha256(prompt+input+model) |
+
+- Method literals and confidences are ground truth from src/ascc/schema/identity.py
+and src/ascc/ingest/prowler.py. This table is generated by grep, never from memory:
+two of the five are passed positionally, so `grep 'method='` alone misses them.
+- MAX_CONFIDENCE spans two populations. arn_parse / terraform_* /
+filesystem_path_heuristic are Resolution.confidence; observed_together is
+BridgeFact.confidence. They are distinct factors in
+correlate.run.effective_confidence (resolution × bridge) and are NOT comparable —
+monotonicity is asserted within resolution methods only.
+- Three volatility classes, three TTL values. run_bound is shorter than source_bound
+because a scanner run artefact is superseded by the next scan, not by a file edit.
+This is an argument about source change frequency, not about trust:
+observed_together carries the second-highest confidence in the table.
+- Store keys are opaque: MatchKey.__str__ is not injectively parseable
+(unescaped ':'), so a stored key is compared by equality and never split.
 
 ## Kubernetes
 

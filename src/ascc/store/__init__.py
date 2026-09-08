@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
+from .memory import InMemoryFactRepository
 from .models import Fact
 from .repository import FactRepository
 
-__all__ = ["Fact", "FactRepository"]
+__all__ = ["Fact", "FactRepository", "InMemoryFactRepository"]
