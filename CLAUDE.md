@@ -307,6 +307,12 @@ would throw away the finding.
 - проверить резолвер terraform на for_each/count фикстуре
 - store: observed_at vs verified_at/last_confirmed — split when confirmations land
 - store: source_digest slot in Fact (additive, frozen dataclass with default)
+- store: put() rejects a naive `now` only via TypeError from the comparison;
+  consider an explicit aware check for symmetry with is_stale
+- guard-claude-md: detect duplicate contract blocks, not only deletions
+- git: one commit, one fresh message file (/tmp/msg-N.txt); never reuse or append
+- post-edit auto-formatter strips unused imports mid-write; re-run ruff after
+  adding type hints, not before
 
 ## Operating rules
 
