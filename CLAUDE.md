@@ -305,6 +305,8 @@ would throw away the finding.
 - корроборация llm <-> детерминированный источник
 - перенести словарь методов в store, correlate импортирует (сейчас — cross-import в тестах)
 - проверить резолвер terraform на for_each/count фикстуре
+- store: observed_at vs verified_at/last_confirmed — split when confirmations land
+- store: source_digest slot in Fact (additive, frozen dataclass with default)
 
 ## Operating rules
 
@@ -368,22 +370,40 @@ Exception: CI-blocking failures only.
   changes, otherwise it is trust smuggled into the volatility axis.
 - TTL is resolved at read time from a versioned constant
   (ascc.store.policy, TTL_POLICY_VERSION). Changing numbers ⇒ no data migration.
-- The repository does NOT know time: put(fact) -> None, get(key) -> Fact | None.
-  Neither as_of nor now appears in any FactRepository signature.
-- verified_at is set by the caller inside Fact; ascc.store never writes it.
-- stale is NOT stored and is NOT a Fact field:
-  is_stale(method, verified_at, as_of) — pure, primitives only.
-  Boundary: stale when age >= ttl. as_of < verified_at ⇒ not stale
+- The repository never READS the clock: `now` is keyword-only and mandatory on
+   put/get/all, injected by the caller (FactRepository, 5056b89). Machine-checked
+   by tests/test_fact_repository.py, both behaviourally and by source grep.
+- The TTL anchor is Fact.observed_at. Re-observation means a new put with a new
+   observed_at; put MUST NOT rewrite it, or Jsonl reload would launder freshness.
+- Fact.stale is a stored field only in the sense that it defaults to False.
+   Its authoritative value is rendered at read: get/all return
+   replace(fact, stale=is_stale(fact.method, fact.observed_at, now)).
+   Policy is the single owner; no repository re-implements expiry.
+- is_stale(method, observed_at, as_of) — pure, primitives only.
+- Validation lives in put(), never in Fact.__post_init__: unknown method
+   raises KeyError, confidence above MAX_CONFIDENCE[method] raises ValueError,
+   observed_at > now raises ValueError. Fact stays a dumb record.
+- Fact.key does NOT contain method — they are separate fields, and get(key)
+   returns one fact per key. A producer that needs facts from different methods
+   about the same subject to coexist MUST put the method into the key tuple.
+- Source-grep guard: tests/test_fact_repository.py greps src/ascc/store/ for
+   "datetime.now", "utcnow", "time.time", "time.monotonic" outside # comments.
+   Docstrings and string literals count. Do not name these APIs inside the package.
+- Layer provenance: Fact + FactRepository ABC in 5056b89 (models.py, not
+   fact.py); policy.py and InMemoryFactRepository in ШАГ 3.
+- Boundary: stale when age >= ttl. as_of < observed_at ⇒ not stale
   (falls out of the formula, no special branch).
- - ascc.store introduces NO effective_confidence of its own. fact.confidence
+- ascc.store introduces NO effective_confidence of its own. fact.confidence
    is used as stored; stale is an orthogonal flag, never a multiplier.
    In v1 is_stale has no consumers — that is expected.
- - correlate.run.effective_confidence (resolution × bridge) is a DIFFERENT
+- correlate.run.effective_confidence (resolution × bridge) is a DIFFERENT
    function, out of scope for the store layer and MUST NOT be modified.
-- Fact key includes method: (method, subject, predicate). Without it an
-  llm fact (0.3) would overwrite an arn fact (1.0).
-  If the key derives from MatchKey.__str__, the MatchKey stability contract
-  extends to the on-disk store format.
+- Fact.key does NOT contain method — they are separate fields, and get(key)
+  returns one fact per key. A producer that needs facts from different methods
+  about the same subject MUST put the method into the key tuple; key is
+  variable-length, so no schema change is required.
+  If a key element derives from MatchKey.__str__, the MatchKey stability
+  contract extends to the on-disk store format.
 - put overwrites by key; observation history is not kept in v1 (see Backlog).
   The provenance invariant covers TTL only.
 - InMemory (overwrite) and Jsonl (append-only, last wins) are observationally
@@ -417,10 +437,6 @@ monotonicity is asserted within resolution methods only.
 because a scanner run artefact is superseded by the next scan, not by a file edit.
 This is an argument about source change frequency, not about trust:
 observed_together carries the second-highest confidence in the table.
-- ascc.store introduces NO effective_confidence of its own. fact.confidence is used
-as stored; stale is an orthogonal flag, never a multiplier. In v1 is_stale has no
-consumers — that is expected. correlate.run.effective_confidence
-(resolution × bridge) is a DIFFERENT function, out of scope and MUST NOT be modified.
 - Store keys are opaque: MatchKey.__str__ is not injectively parseable
 (unescaped ':'), so a stored key is compared by equality and never split.
 
