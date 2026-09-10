@@ -296,9 +296,9 @@ would throw away the finding.
 - tooling: guard-claude-md should scope deletion check outside ## Backlog (crossing off done items is legitimate)
 - Settings Sync scope: Extensions/MCP/Profiles excluded — declarative policy owns extensions
 - ResourceRelation: implement red-first alongside the LLM edge track
-  (method="llm", confidence<=0.3, excluded from Union-Find). Fact.key is
-  a variable-length tuple — a relation fits as (src, dst) with no schema
-  change. Verified 2026-09-07, no rework risk.
+(method="llm", confidence<=0.3, excluded from Union-Find). Fact.key is
+a variable-length tuple — a relation fits as (src, dst) with no schema
+change. Verified 2026-09-07, no rework risk.
 - volatility_class как первичный ключ политики вместо method
 - source_digest как жёсткий инвалидатор (слот в Fact есть с v1, логики нет)
 - Jsonl append-only + история наблюдений + confirmations/contradicted_by
@@ -308,23 +308,37 @@ would throw away the finding.
 - store: observed_at vs verified_at/last_confirmed — split when confirmations land
 - store: source_digest slot in Fact (additive, frozen dataclass with default)
 - store: put() rejects a naive `now` only via TypeError from the comparison;
-  consider an explicit aware check for symmetry with is_stale
+consider an explicit aware check for symmetry with is_stale
 - guard-claude-md: detect duplicate contract blocks, not only deletions
 - git: one commit, one fresh message file (/tmp/msg-N.txt); never reuse or append
 - post-edit auto-formatter strips unused imports mid-write; re-run ruff after
-  adding type hints, not before
-  - pre-commit does not run on merge commits: I001 entered main via
-  602178b (feat/store-ttl, --no-ff). CI caught it (run #67) but the
-  alert was missed for two days -- the red-commit push rule above is
-  the fix. Optional backup: .githooks/pre-merge-commit.
+adding type hints, not before
+- pre-commit does not run on merge commits: I001 entered main via
+602178b (feat/store-ttl, --no-ff). CI caught it (run #67) but the
+alert was missed for two days -- the red-commit push rule above is
+the fix. Optional backup: .githooks/pre-merge-commit.
+- store: JsonlFactRepository writes "v":1 but never reads it. A v2 file
+read by v1 code is misparsed silently. Add a version check in
+_from_record before the format ever changes, not after.
+- store: put() fsyncs the file but not the directory, so the file's
+CREATION is not durable — only its contents. A crash right after the
+first put can leave no file at all. Add an O_DIRECTORY fsync after
+mkdir, or accept and document the window.
+- store: validation is duplicated between memory.py and jsonl.py. The
+conformance suite makes drift fail immediately, so two copies are safe;
+extract a shared helper when Postgres makes it three.
+- store: file mode 0o600 is unasserted by any test. Add one or drop the
+claim from CLAUDE.md.
+- tooling: reviewing deletions with `grep '^-[^-]'` hides deleted markdown
+bullets (they render as `--`) and blank lines. Use
+`git show <sha> -- FILE | grep '^-' | grep -v '^---'` and check the count
+against --numstat column 2.
 
 ## Operating rules
 
 - Release provenance: tags are created on ai-sec-ubuntu (UTC). Dates are never backdated
 - just: every recipe line is a separate shell. Early `exit` aborts only that line — join with `; \` when short-circuiting.
-
 - Regex over diff lines (`^-[^-]`) is blind to deleted blank lines and markdown bullets. Use `git diff --numstat` column 2 as ground truth for deletions.
-
 2026-08-21: jsonschema + SARIF schema landed inside 8abfab4, outside the
 20.08 rc cut. Not reverted — the same commit carries the severity mapping
 and the dev-deps consolidation fix. Schema-validation test stays deferred
@@ -338,6 +352,8 @@ New tooling ideas go to ## BACKLOG as one-liners, not code.
 Exception: CI-blocking failures only.
 rc scope (cut 2026-08-20): v0.1.0-rc ships to_sarif() + --output + determinism test.
 SARIF schema-validation and live-golden regeneration deferred to 0.1.1.
+LIFTED 2026-09-10 by its own gate (see Progress below) — the block that
+follows is kept for provenance, not as a live rule.
 ACTIVE FREEZE (scoped, 2026-09-06): no chore(tooling) commits until
 the JsonlFactRepository conformance suite is green. Rationale: the
 previous unscoped lift was followed by three consecutive tooling
@@ -350,10 +366,15 @@ InMemoryFactRepository passes it as of 3f821af; policy.py and memory.py
 landed with 37 contract tests in tests/store/, 170 total.
 JsonlFactRepository remains — one line in IMPLEMENTATIONS plus the deferred
 reload-preserves-observed_at test — so the freeze holds by its own terms.
-- TDD red commits are NOT pushed alone: CI runs the full suite on main
-  and will fail. Commit red locally, implement, push red+green together.
-  The pair stays visible in history; CI only ever sees green.
-  (Learned 2026-09-07: b6804e4 pushed alone triggered a CI failure alert.)
+TDD red commits are NOT pushed alone: CI runs the full suite on main
+and will fail. Commit red locally, implement, push red+green together.
+The pair stays visible in history; CI only ever sees green.
+(Learned 2026-09-07: b6804e4 pushed alone triggered a CI failure alert.)
+Progress 2026-09-10: JsonlFactRepository green. The conformance suite is
+parametrised over two implementations (42 cases) plus 13 durability cases
+in tests/store/test_jsonl_repository.py; 205 total. The scoped freeze of
+2026-09-06 is lifted by its own terms: no chore(tooling) commits landed
+while it held.
 
 ## Contracts
 
@@ -378,18 +399,18 @@ reload-preserves-observed_at test — so the freeze holds by its own terms.
 - Chain: InMemoryFactRepository → JsonlFactRepository → Postgres.
 - `--store` is a directory (file_okay=False); never a single file.
 - `--store` accepts a non-existent path; the directory is NOT created
-  by the CLI. writable=True to be added when FactRepository lands.
+by the CLI. writable=True to be added when FactRepository lands.
 - Invariant: `--store` is output-neutral — SARIF bytes identical with
-  and without it. Guarded by tests/test_store_invariant.py.
+and without it. Guarded by tests/test_store_invariant.py.
 
 ### Freshness policy (v1)
 
 - TTL models SOURCE VOLATILITY, not method trust and not recomputation cost.
-  Trust lives in confidence. Double-counting is forbidden: any TTL other than
-  30d for a source-bound method needs an argument about how fast the source
-  changes, otherwise it is trust smuggled into the volatility axis.
+Trust lives in confidence. Double-counting is forbidden: any TTL other than
+30d for a source-bound method needs an argument about how fast the source
+changes, otherwise it is trust smuggled into the volatility axis.
 - TTL is resolved at read time from a versioned constant
-  (ascc.store.policy, TTL_POLICY_VERSION). Changing numbers ⇒ no data migration.
+(ascc.store.policy, TTL_POLICY_VERSION). Changing numbers ⇒ no data migration.
 - The repository never READS the clock: `now` is keyword-only and mandatory on
    put/get/all, injected by the caller (FactRepository, 5056b89). Machine-checked
    by tests/test_fact_repository.py, both behaviourally and by source grep.
