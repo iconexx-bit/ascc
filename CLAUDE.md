@@ -346,6 +346,10 @@ InMemoryFactRepository passes it as of 3f821af; policy.py and memory.py
 landed with 37 contract tests in tests/store/, 170 total.
 JsonlFactRepository remains — one line in IMPLEMENTATIONS plus the deferred
 reload-preserves-observed_at test — so the freeze holds by its own terms.
+- TDD red commits are NOT pushed alone: CI runs the full suite on main
+  and will fail. Commit red locally, implement, push red+green together.
+  The pair stays visible in history; CI only ever sees green.
+  (Learned 2026-09-07: b6804e4 pushed alone triggered a CI failure alert.)
 
 ## Contracts
 
