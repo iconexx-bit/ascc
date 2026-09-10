@@ -398,10 +398,14 @@ while it held.
 - TTL: expiry downgrades/marks stale, never deletes (provenance).
 - Chain: InMemoryFactRepository → JsonlFactRepository → Postgres.
 - `--store` is a directory (file_okay=False); never a single file.
-- `--store` accepts a non-existent path; the directory is NOT created
-by the CLI. writable=True to be added when FactRepository lands.
-- Invariant: `--store` is output-neutral — SARIF bytes identical with
-and without it. Guarded by tests/test_store_invariant.py.
+- `--store` accepts a non-existent path. The CLI never creates the
+  directory; JsonlFactRepository.put does, on first write.
+- Invariant: an ABSENT or EMPTY store produces byte-identical SARIF.
+  The mere presence of the flag never leaks into the artifact. A
+  POPULATED store legitimately changes correlation output — that is the
+  feature, not a violation, and ШАГ 6 depends on it.
+  tests/test_store_invariant.py already tests the correct form: it
+  points --store at a fresh tmp directory.
 
 ### Freshness policy (v1)
 
@@ -508,6 +512,40 @@ observed_together carries the second-highest confidence in the table.
 - Conformance fixture: implementations are built from a tmp directory. The
   "no arguments" contract was InMemory-shaped and did not survive contact
   with a file-backed repository.
+
+  ### ШАГ 5: CLI wiring + producer
+
+- --store gains writable=True. exists stays False: the path may not
+  exist, and click skips the access check when it does not.
+- `del store` is replaced by constructing JsonlFactRepository(store).
+- ORDER IS CONTRACT: the store block sits AFTER the --output block in
+  correlate(). SARIF is written only under --output, so the ordering is
+  positional, not conditional. --store without --output is legitimate.
+- The CLI is the clock injector: datetime.now(UTC) belongs here and is
+  outside the store-package grep guard by design.
+- Source: CorrelationRun.scan_runs[].bridge_facts. Only observed_together
+  is ever emitted, because BridgeFact is the only thing bridge_facts
+  holds — the emission criterion is satisfied structurally, not by a
+  filter. arn_parse lives in Resolution and never reaches the store.
+- BridgeFact -> Fact mapping lives in cli.py, not in ascc.store: the
+  store package must not import ascc.schema.
+    key        = tuple(sorted((str(bf.left), str(bf.right))))
+    method     = bf.method
+    confidence = bf.confidence
+    observed_at= the injected now
+    payload    = {"source": bf.source, "evidence": bf.evidence}
+- The key is canonicalised by sorting: observed_together is symmetric in
+  meaning, a tuple is not. Without sorting one pair yields two records.
+- payload gets its first product writer here. source and evidence have no
+  Fact field and would otherwise be dropped.
+- Reading the key back is OUT OF SCOPE: MatchKey.__str__ is not
+  injectively parseable. ШАГ 6 must resolve how a consumer recovers a
+  MatchKey — carry it in payload, or make __str__ round-trippable.
+- A store write failure after the SARIF is on disk warns on stderr and
+  keeps ExitCode.OK: the artifact already succeeded.
+- tests/test_store_invariant.py::test_store_writes_nothing is inverted to
+  test_store_persists_facts. Its own docstring authorises exactly this
+  edit; test_store_flag_is_output_neutral stays untouched.
 
 ## Kubernetes
 
