@@ -313,6 +313,10 @@ would throw away the finding.
 - git: one commit, one fresh message file (/tmp/msg-N.txt); never reuse or append
 - post-edit auto-formatter strips unused imports mid-write; re-run ruff after
   adding type hints, not before
+  - pre-commit does not run on merge commits: I001 entered main via
+  602178b (feat/store-ttl, --no-ff). CI caught it (run #67) but the
+  alert was missed for two days -- the red-commit push rule above is
+  the fix. Optional backup: .githooks/pre-merge-commit.
 
 ## Operating rules
 
@@ -455,6 +459,34 @@ This is an argument about source change frequency, not about trust:
 observed_together carries the second-highest confidence in the table.
 - Store keys are opaque: MatchKey.__str__ is not injectively parseable
 (unescaped ':'), so a stored key is compared by equality and never split.
+
+### JsonlFactRepository
+
+- Constructor takes a DIRECTORY, mirroring `--store` (file_okay=False).
+  The file name is an implementation detail; the CLI never spells ".jsonl".
+- The directory is created on the first put, never in __init__: `--store`
+  accepts a non-existent path and construction has no filesystem effects.
+- Append-only, one JSON object per line, LF-terminated, last line per key
+  wins on read. Rationale: observation history (Backlog) needs the earlier
+  lines, and observed_at becomes structurally un-rewritable.
+- put() = one write() + fsync. No buffer, no flush/close contract, no tmp
+  file. Validation precedes the write: a rejected put leaves the file byte-
+  identical.
+- all() collapses duplicate keys; observationally identical to InMemory.
+- stale is NEVER serialised: rendered at read from policy.
+- The file encodes neither TTL nor TTL_POLICY_VERSION.
+- Format version "v":1, bumped when the serialised field set changes.
+  Distinct from TTL_POLICY_VERSION; the two never move together.
+- Explicit field mapping, never dataclasses.asdict(): asdict would bind the
+  on-disk format to field names and make a rename a silent breaking change.
+- payload is Mapping[str, str]; reloaded as MappingProxyType for symmetry.
+- json.dumps(sort_keys=True, separators=(",",":"), ensure_ascii=False),
+  encoding="utf-8", newline="\n", file mode 0o600.
+- A truncated trailing line is skipped, not raised: only the last line can
+  tear, and losing one fact must not cost the other N-1.
+- Conformance fixture: implementations are built from a tmp directory. The
+  "no arguments" contract was InMemory-shaped and did not survive contact
+  with a file-backed repository.
 
 ## Kubernetes
 

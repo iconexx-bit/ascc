@@ -19,11 +19,12 @@ of using the injected `now` fails deterministically, not 99.9% of the time.
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
 
-from ascc.store import Fact, InMemoryFactRepository
+from ascc.store import Fact, InMemoryFactRepository, JsonlFactRepository
 
 if TYPE_CHECKING:
     from ascc.store import FactRepository
@@ -36,13 +37,22 @@ DAY = timedelta(days=1)
 TF = "terraform_natural_name"
 ARN = "arn_parse"
 
-IMPLEMENTATIONS = (InMemoryFactRepository,)
+
+def _in_memory(tmp_path: Path) -> FactRepository:
+    return InMemoryFactRepository()
 
 
-@pytest.fixture(params=IMPLEMENTATIONS, ids=lambda cls: cls.__name__)
-def repo(request: pytest.FixtureRequest) -> FactRepository:
-    """Every implementation must be constructible with no arguments."""
-    return request.param()
+def _jsonl(tmp_path: Path) -> FactRepository:
+    return JsonlFactRepository(tmp_path)
+
+
+IMPLEMENTATIONS = (_in_memory, _jsonl)
+
+
+@pytest.fixture(params=IMPLEMENTATIONS, ids=lambda f: f.__name__.removeprefix("_"))
+def repo(request: pytest.FixtureRequest, tmp_path: Path) -> FactRepository:
+    """Every implementation is built from a directory it may ignore."""
+    return request.param(tmp_path)
 
 
 def make_fact(
@@ -237,3 +247,13 @@ def test_payload_survives_a_round_trip(repo: FactRepository) -> None:
     stored = repo.get(fact.key, now=T0)
     assert stored is not None
     assert dict(stored.payload) == {"scanner": "prowler", "region": "eu-west-1"}
+
+
+def test_all_does_not_repeat_an_overwritten_key(repo: FactRepository) -> None:
+    """Append-only storage must collapse duplicate keys on read."""
+    key = ("aws:s3:bucket:datalake-raw",)
+    repo.put(make_fact(key=key, confidence=0.4), now=T0)
+    repo.put(make_fact(key=key, confidence=0.9), now=T0)
+    facts = list(repo.all(now=T0))
+    assert len(facts) == 1
+    assert facts[0].confidence == 0.9
