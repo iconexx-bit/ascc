@@ -1,6 +1,7 @@
 import json
 import os
 import tempfile
+from datetime import UTC, datetime
 from enum import IntEnum
 from pathlib import Path
 
@@ -12,7 +13,8 @@ from ascc.correlate.run import correlate as run_correlate
 from ascc.correlate.run import effective_confidence
 from ascc.export.sarif import to_sarif
 from ascc.ingest.registry import parser_for
-from ascc.schema.models import ScanRun
+from ascc.schema.models import BridgeFact, ScanRun
+from ascc.store import Fact, JsonlFactRepository
 
 
 class ExitCode(IntEnum):
@@ -23,6 +25,24 @@ class ExitCode(IntEnum):
     USAGE = 2  # выставляется Click
     NO_INPUT = 3
     INTERNAL = 70  # sysexits.h EX_SOFTWARE
+
+
+def _to_fact(bf: BridgeFact, *, observed_at: datetime) -> Fact:
+    """Map a BridgeFact to a store Fact. Explicit field mapping only.
+
+    key is the sorted pair of the sides' string forms. BridgeFact.__post_init__
+    already orders left/right the same way, so within one version this sort is
+    redundant — but the persisted key is a durable on-disk format and must not
+    inherit an in-memory invariant that could change later (see CLAUDE.md,
+    "ШАГ 5: CLI wiring + producer").
+    """
+    return Fact(
+        key=tuple(sorted((str(bf.left), str(bf.right)))),
+        method=bf.method,
+        confidence=bf.confidence,
+        observed_at=observed_at,
+        payload={"source": bf.source, "evidence": bf.evidence},
+    )
 
 
 app = typer.Typer(name="ascc", help="AI Security Command Center")
@@ -60,10 +80,10 @@ def correlate(
         "--store",
         file_okay=False,
         dir_okay=True,
-        help="Path to a fact store (reserved; not yet implemented).",
+        writable=True,
+        help="Path to a fact store; persists observed_together bridge facts.",
     ),
 ) -> None:
-    del store  # no-op until FactRepository lands
     console = _make_console()
     scan_runs: list[ScanRun] = []
     skipped: list[tuple[str, str]] = []
@@ -124,6 +144,23 @@ def correlate(
         finally:
             if tmp_name is not None and os.path.exists(tmp_name):
                 os.unlink(tmp_name)
+
+    if store is not None:
+        # Facts are written only here, after the whole `if output is not
+        # None:` block above and at the same indentation level — never
+        # nested inside it. SARIF generation has already completed by this
+        # point, so an absent or empty --store cannot leak into the
+        # artifact; that is what keeps --store output-neutral.
+        try:
+            now = datetime.now(UTC)
+            repo = JsonlFactRepository(store)
+            for run in correlation_run.scan_runs:
+                for bf in run.bridge_facts:
+                    repo.put(_to_fact(bf, observed_at=now), now=now)
+        except OSError as exc:
+            Console(stderr=True).print(f"[red]Failed to persist store:[/red] {exc}")
+            if output is None:
+                raise typer.Exit(code=ExitCode.INTERNAL) from None
 
     resources_table = Table(title="Resources")
     resources_table.add_column("Key")
