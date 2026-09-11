@@ -534,8 +534,15 @@ observed_together carries the second-highest confidence in the table.
     confidence = bf.confidence
     observed_at= the injected now
     payload    = {"source": bf.source, "evidence": bf.evidence}
-- The key is canonicalised by sorting: observed_together is symmetric in
-  meaning, a tuple is not. Without sorting one pair yields two records.
+- The key is the sorted pair of the sides' string forms. Redundant today:
+  `BridgeFact.__post_init__` already orders left/right by the same str
+  comparison (verified 2026-09-10), so within one version no pair can
+  yield two records. The sort stays because the persisted key is a durable
+  format and must not inherit an in-memory invariant: if BridgeFact's
+  ordering ever changes, an unsorted mapper would file one pair under two
+  keys across versions, and append-only storage never cleans that up.
+  Sorting lives in the cli.py mapper only: ResourceRelation keys (src,dst)
+  are directed and must never be sorted.
 - payload gets its first product writer here. source and evidence have no
   Fact field and would otherwise be dropped.
 - Reading the key back is OUT OF SCOPE: MatchKey.__str__ is not
@@ -543,6 +550,11 @@ observed_together carries the second-highest confidence in the table.
   MatchKey — carry it in payload, or make __str__ round-trippable.
 - A store write failure after the SARIF is on disk warns on stderr and
   keeps ExitCode.OK: the artifact already succeeded.
+- Store-only run (no --output): the store IS the requested product, so a
+  store write failure exits ExitCode.INTERNAL with the error on stderr.
+  Warn-and-OK above holds only when a SARIF artifact already succeeded.
+  Fail-open here would lose history silently: ШАГ 6 would read an empty
+  store as "no history".
 - tests/test_store_invariant.py::test_store_writes_nothing is inverted to
   test_store_persists_facts. Its own docstring authorises exactly this
   edit; test_store_flag_is_output_neutral stays untouched.
