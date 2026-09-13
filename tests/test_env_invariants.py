@@ -1,5 +1,6 @@
 """Инварианты окружения. Гейт для остальных тестов."""
 
+import os
 import pathlib
 import re
 import shutil
@@ -43,6 +44,12 @@ def test_no_tests_outside_tests_dir():
     assert not stray, f"тесты вне tests/: {stray}"
 
 
+@pytest.mark.skipif(
+    os.environ.get("CI") == "true",
+    reason="core.hooksPath is a working-copy invariant: it protects a developer's "
+    "clone from committing past the local gate. CI has no local gate to protect — "
+    "the workflow is the gate there.",
+)
 def test_hooks_path_is_configured():
     """A fresh clone has no core.hooksPath; without it .githooks/pre-commit
     never runs and the repo has no local gate at all. `just init-hooks` sets it."""
