@@ -109,5 +109,3 @@ AFTER=$(wc -l < "$F")
 DEL=$(git diff --numstat -- "$F" | awk '{print $2}')
 [[ "${DEL:-0}" -eq 0 ]]                       || { echo "POST: $DEL deletions — ABORT"; exit 1; }
 echo "OK: +$((AFTER - BEFORE)) lines, 0 deletions"
-    # insert_at_section_end — разделитель сверху
-    return rows[:end] + ["\n", block.lstrip("\n")] + rows[end:]
