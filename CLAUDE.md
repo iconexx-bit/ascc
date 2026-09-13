@@ -333,6 +333,10 @@ claim from CLAUDE.md.
 bullets (they render as `--`) and blank lines. Use
 `git show <sha> -- FILE | grep '^-' | grep -v '^---'` and check the count
 against --numstat column 2.
+- Error output: paths and any untrusted string go to stderr via `typer.echo(..., err=True)`, never Rich markup — a `[/x]` in a path raised MarkupError inside the handler and replaced the exit code with a traceback (fixed in `fix(cli)`).
+- `guard-claude-md`, third item: honour `ALLOW_CLAUDE_MD_DELETIONS=N` and pass only when it equals `git diff --numstat` col2, instead of a blanket `--no-verify` that also skips gitleaks.
+- Multi-line CLAUDE.md edits go through a fail-closed script (anchor preconditions + numstat postcondition); paste source text into empty files only, never edit the section in place.
+- `.prettierignore` for CLAUDE.md — format-on-save would reformat it and the guard would read that as deletions.
 
 ## Operating rules
 
