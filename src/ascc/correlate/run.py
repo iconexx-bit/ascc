@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 from ascc.schema.identity import MatchKey
-from ascc.schema.models import Finding, Resource, ScanRun
+from ascc.schema.models import BridgeFact, Finding, Resource, ScanRun
 
 from .bridge import ResourceCluster, build_clusters
 
@@ -33,9 +33,13 @@ class CorrelationRun:
     tag_conflicts: tuple[TagConflict, ...]
 
 
-def correlate(runs: Iterable[ScanRun]) -> CorrelationRun:
+def correlate(runs: Iterable[ScanRun], *, extra_facts: Iterable[BridgeFact] = ()) -> CorrelationRun:
+    """extra_facts (ШАГ 6): history rejoined from the store, appended to this
+    run's own bridge facts before clustering. Keyword-only with an empty
+    default so every pre-existing call site keeps working unchanged."""
     scan_runs = tuple(runs)
     all_facts = [fact for run in scan_runs for fact in run.bridge_facts]
+    all_facts.extend(extra_facts)
     clusters = tuple(build_clusters(all_facts))
     resources, tag_conflicts = _merge_resources(scan_runs)
     return CorrelationRun(

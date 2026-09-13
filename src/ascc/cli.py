@@ -9,6 +9,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from ascc.correlate.history import facts_to_bridge_facts
 from ascc.correlate.run import correlate as run_correlate
 from ascc.correlate.run import effective_confidence
 from ascc.export.sarif import to_sarif
@@ -27,6 +28,9 @@ class ExitCode(IntEnum):
     INTERNAL = 70  # sysexits.h EX_SOFTWARE
 
 
+_MATCH_KEY_FIELDS = ("partition", "service", "resource_type", "identifier")
+
+
 def _to_fact(bf: BridgeFact, *, observed_at: datetime) -> Fact:
     """Map a BridgeFact to a store Fact. Explicit field mapping only.
 
@@ -35,14 +39,41 @@ def _to_fact(bf: BridgeFact, *, observed_at: datetime) -> Fact:
     redundant — but the persisted key is a durable on-disk format and must not
     inherit an in-memory invariant that could change later (see CLAUDE.md,
     "ШАГ 5: CLI wiring + producer").
+
+    payload_v 1 (ШАГ 6): each side's four MatchKey fields, flat-prefixed
+    `{side}.{field}`, so a consumer (ascc.correlate.history) can reconstruct
+    MatchKey(*fields) without ever parsing str(MatchKey) — see CLAUDE.md,
+    "ШАГ 6: store consumer". getattr defaults to "" for a side that is not a
+    real MatchKey: test_cli_store.py exercises this mapper's sort behaviour
+    with a stand-in carrying only __str__, and a real BridgeFact's sides
+    always have all four fields.
     """
+    payload: dict[str, str] = {
+        "payload_v": "1",
+        "source": bf.source,
+        "evidence": bf.evidence,
+    }
+    for side, key in (("left", bf.left), ("right", bf.right)):
+        for field in _MATCH_KEY_FIELDS:
+            payload[f"{side}.{field}"] = getattr(key, field, "")
     return Fact(
         key=tuple(sorted((str(bf.left), str(bf.right)))),
         method=bf.method,
         confidence=bf.confidence,
         observed_at=observed_at,
-        payload={"source": bf.source, "evidence": bf.evidence},
+        payload=payload,
     )
+
+
+def _now() -> datetime:
+    """`ASCC_NOW` (RFC3339) overrides the clock when set; otherwise the real
+    clock. Required for reproducible history fixtures: observed_together's
+    7-day TTL would expire a committed fixture with no code change (see
+    CLAUDE.md, "ШАГ 6: store consumer")."""
+    raw = os.environ.get("ASCC_NOW")
+    if raw is not None:
+        return datetime.fromisoformat(raw)
+    return datetime.now(UTC)
 
 
 app = typer.Typer(name="ascc", help="AI Security Command Center")
@@ -113,8 +144,26 @@ def correlate(
     for name, reason in skipped:
         console.print(f"[yellow]Skipping {name}: {reason}[/yellow]")
 
+    now = _now()
+
+    # ШАГ 6: read → correlate → write. `repo` is created here (not inside the
+    # persist block below) so the same instance and the same `now` serve both
+    # the read and the write side of one run.
+    repo: JsonlFactRepository | None = None
+    historical: list[BridgeFact] = []
+    if store is not None:
+        repo = JsonlFactRepository(store)
+        try:
+            historical, _dropped = facts_to_bridge_facts(repo.all(now=now), known={})
+        except OSError:
+            # An unreadable store degrades to no history rather than aborting
+            # the run — the write block below hits the same path and is where
+            # a --store failure is actually surfaced (see CLAUDE.md, "ШАГ 5:
+            # CLI wiring + producer").
+            historical = []
+
     try:
-        correlation_run = run_correlate(scan_runs)
+        correlation_run = run_correlate(scan_runs, extra_facts=historical)
     except Exception:  # noqa: BLE001 — CLI boundary: any internal failure maps to INTERNAL
         console.print_exception()
         raise typer.Exit(code=ExitCode.INTERNAL) from None
@@ -145,15 +194,13 @@ def correlate(
             if tmp_name is not None and os.path.exists(tmp_name):
                 os.unlink(tmp_name)
 
-    if store is not None:
+    if repo is not None:
         # Facts are written only here, after the whole `if output is not
         # None:` block above and at the same indentation level — never
         # nested inside it. SARIF generation has already completed by this
         # point, so an absent or empty --store cannot leak into the
         # artifact; that is what keeps --store output-neutral.
         try:
-            now = datetime.now(UTC)
-            repo = JsonlFactRepository(store)
             for run in correlation_run.scan_runs:
                 for bf in run.bridge_facts:
                     repo.put(_to_fact(bf, observed_at=now), now=now)
