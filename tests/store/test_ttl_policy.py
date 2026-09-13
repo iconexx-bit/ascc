@@ -178,3 +178,9 @@ def test_run_bound_ttl_is_shorter_than_source_bound() -> None:
     run_bound = ttl_for("observed_together")
     assert run_bound is not None
     assert run_bound < ttl_for("terraform_natural_name")
+
+
+def test_ttl_and_ceiling_cover_the_same_methods():
+    """A method in one table and not the other is a latent KeyError: put()
+    reads MAX_CONFIDENCE, is_stale() reads TTL. They must move together."""
+    assert TTL.keys() == MAX_CONFIDENCE.keys()

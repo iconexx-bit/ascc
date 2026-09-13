@@ -4,6 +4,7 @@ is ШАГ 7."""
 
 from __future__ import annotations
 
+import dataclasses
 from dataclasses import replace
 from datetime import UTC, datetime
 
@@ -117,3 +118,10 @@ def test_empty_endpoint_fields_are_dropped() -> None:
     edges, dropped = facts_to_bridge_facts([fact], known={})
     assert edges == []
     assert [r for _, r in dropped] == ["malformed"]
+
+
+def test_matchkey_field_order_pinned():
+    """facts_to_bridge_facts reconstructs MatchKey positionally from payload
+    v1 fields. Reordering or adding a field silently produces wrong keys —
+    bump payload_v and handle the new shape in the consumer."""
+    assert [f.name for f in dataclasses.fields(MatchKey)] == list(_FIELDS)
