@@ -155,11 +155,12 @@ def correlate(
         repo = JsonlFactRepository(store)
         try:
             historical, _dropped = facts_to_bridge_facts(repo.all(now=now), known={})
-        except OSError:
+        except OSError as exc:
             # An unreadable store degrades to no history rather than aborting
             # the run — the write block below hits the same path and is where
             # a --store failure is actually surfaced (see CLAUDE.md, "ШАГ 5:
             # CLI wiring + producer").
+            typer.echo(f"Store unreadable, continuing without history: {exc}", err=True)
             historical = []
 
     try:

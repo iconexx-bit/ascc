@@ -21,7 +21,7 @@ from ascc.schema.identity import MatchKey
 from ascc.schema.models import BridgeFact
 from ascc.store import Fact
 
-DropReason = Literal["stale", "llm", "v0_unresolvable"]
+DropReason = Literal["stale", "llm", "v0_unresolvable", "malformed"]
 
 FIELDS = ("partition", "service", "resource_type", "identifier")
 
@@ -48,8 +48,13 @@ def facts_to_bridge_facts(
 
         payload_v = fact.payload.get("payload_v")
         if payload_v is not None and int(payload_v) >= 1:
-            left = MatchKey(*(fact.payload[f"left.{field}"] for field in FIELDS))
-            right = MatchKey(*(fact.payload[f"right.{field}"] for field in FIELDS))
+            left_values = [fact.payload[f"left.{field}"] for field in FIELDS]
+            right_values = [fact.payload[f"right.{field}"] for field in FIELDS]
+            if not all(left_values) or not all(right_values):
+                dropped.append((fact, "malformed"))
+                continue
+            left = MatchKey(*left_values)
+            right = MatchKey(*right_values)
         else:
             left_str, right_str = fact.key
             if left_str not in known or right_str not in known:
