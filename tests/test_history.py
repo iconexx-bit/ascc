@@ -18,6 +18,7 @@ NOW = datetime(2026, 9, 13, 12, 0, tzinfo=UTC)
 A = MatchKey("aws", "ec2", "instance", "a")
 G = MatchKey("aws", "ec2", "instance", "ghost")
 B = MatchKey("aws", "ec2", "instance", "b")
+_FIELDS = ("partition", "service", "resource_type", "identifier")
 
 
 def _bf(
@@ -101,3 +102,18 @@ def test_v0_fact_needs_known() -> None:
     assert facts_to_bridge_facts([v0], known={}) == ([], [(v0, "v0_unresolvable")])
     edges, _ = facts_to_bridge_facts([v0], known={str(A): A, str(B): B})
     assert edges == [bf]
+
+
+def test_empty_endpoint_fields_are_dropped() -> None:
+    """A payload whose endpoint fields are empty must not reconstruct
+    MatchKey("", "", "", ""): every such fact would share one key and silently
+    merge unrelated clusters — the exact failure this project exists to prevent."""
+    blank = dict.fromkeys((f"left.{f}" for f in _FIELDS), "")
+    good = {f"right.{f}": getattr(B, f) for f in _FIELDS}
+    fact = replace(
+        _to_fact(_bf(A, B), observed_at=NOW),
+        payload={"payload_v": "1", "source": "s", "evidence": "e", **blank, **good},
+    )
+    edges, dropped = facts_to_bridge_facts([fact], known={})
+    assert edges == []
+    assert [r for _, r in dropped] == ["malformed"]
