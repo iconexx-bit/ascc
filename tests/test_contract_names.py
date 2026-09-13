@@ -19,11 +19,13 @@ DOCS = ("CLAUDE.md", "README.md")
 # backticks match neither shape.
 _NAME = re.compile(r"`(ascc(?:\.[a-z_][a-z0-9_]*)+|[A-Z][A-Za-z0-9]*[a-z][A-Za-z0-9]*)`")
 
-# Backticked CamelCase that is deliberately not ascc code: external tools,
-# third-party classes, prose. Triaged once; add a reason when you extend it.
+# Backticked CamelCase that is deliberately not ascc code. Each entry needs a reason.
 _ALLOWED_ABSENT: frozenset[str] = frozenset(
     {
-        # fill from the first run
+        # The historical drift this guard exists to catch: the name never existed in
+        # src/ascc and must stay absent. CLAUDE.md's Backlog cites it as the case study,
+        # so the guard would otherwise fail on its own documentation.
+        "IdentityBridge",
     }
 )
 
