@@ -348,6 +348,19 @@ against --numstat column 2.
 - Once ШАГ 6 lands, cross-reference `ASCC_NOW` from the Determinism section and
   the "str(MatchKey) is never parsed" rule from Contracts — step-local today,
   global after.
+- lint: a green local `ruff check` without `--no-cache` proves nothing — `.ruff_cache`
+  returned a stale clean verdict for tests/test_history.py and let I001 reach main
+  (063753e, fixed in 01695d6). The justfile recipe now passes --no-cache.
+- docs: `### ШАГ 5` is indented two spaces; ATX headings with 1–3 leading spaces still
+  render but escape `grep -n "^## "` section maps. Normalise when markdownlint lands (MD023).
+- docs: commit bodies over one line go into /tmp/msg-*.txt via the editor; verify with
+  `git log -1 --format='%B'` right after any --no-verify commit.
+- tests: the red phase covers new tests AND every existing assertion the new contract
+  invalidates — test_store_persists_facts had to be widened by hand for payload v1.
+- cli: `_now()` does not reject a naive ASCC_NOW; a naive value raises TypeError deep in
+  is_stale instead of a clear message. Validate tzinfo.
+- env: a system pytest 7.4.4 is on PATH; a bare `pytest` silently uses /usr/bin/python3
+  and fails to import ascc. `uv run` everywhere, as CLAUDE.md already requires.
 
 ## Operating rules
 
