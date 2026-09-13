@@ -10,8 +10,8 @@ deps-check:
 
 # Форматирование и статический анализ
 lint:
-    uv run --locked ruff check .
-    uv run --locked ruff format --check .
+    uv run --locked ruff check --no-cache
+    uv run --locked ruff format --check --no-cache
 
 # Инварианты окружения — гейт для остального
 test-env:

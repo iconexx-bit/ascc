@@ -7,9 +7,8 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import UTC, datetime
 
-from ascc.correlate.history import facts_to_bridge_facts
-
 from ascc.cli import _to_fact
+from ascc.correlate.history import facts_to_bridge_facts
 from ascc.correlate.run import correlate, effective_confidence
 from ascc.schema.identity import IdentityClass, MatchKey, Resolution
 from ascc.schema.models import BridgeFact, Finding, ScanRun
