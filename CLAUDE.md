@@ -361,6 +361,24 @@ against --numstat column 2.
   is_stale instead of a clear message. Validate tzinfo.
 - env: a system pytest 7.4.4 is on PATH; a bare `pytest` silently uses /usr/bin/python3
   and fails to import ascc. `uv run` everywhere, as CLAUDE.md already requires.
+- tests: an env invariant describing the developer's clone (core.hooksPath) is a
+  working-copy invariant and is false in CI; it needs skipif(CI) with the reason in the
+  skip text. Package invariants (entrypoint, no tests outside tests/) hold everywhere.
+- tooling: pasting a multi-line block into the editor dropped a newline or a character
+  five times in one session (### ШАГ 6 heading, a Backlog bullet, justfile `show:`,
+  `def` where `@` belonged). Re-parse right after every multi-line edit: `just --list`
+  for the justfile, `python3 -c "import ast; ast.parse(...)"` for Python, precheck greps
+  for docs.
+- tests: a new guard is proved by reproducing the defect it was written for, never by a
+  green run. test_documented_names_exist_in_source was green until an `IdentityBridge`
+  probe appended to README made it fail.
+- tooling: guard-claude-md reads ALLOW_CLAUDE_MD_DELETE, not ..._DELETIONS as an earlier
+  Backlog line says; ШАГ 4 used a blanket --no-verify when the scoped bypass existed.
+- security: gitleaks runs only in CI (ci.yml:47). The local .pre-commit-config.yaml that
+  declared it was never executed — core.hooksPath points at .githooks — and is deleted.
+  A --no-verify commit therefore cannot skip the secret scan. Intentional.
+- deps: `pre-commit` is still in dev extras but no hook uses it; removing it touches
+  uv.lock, so it is deferred, not forgotten.
 
 ## Operating rules
 
