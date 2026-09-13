@@ -212,9 +212,14 @@ Rejected alternatives:
 
 ### Invariant: confidence composes, never replaces
 
-A claim that travels over a bridge is the product of every link it crosses:
+A claim that travels over a bridge is the product of the links it crosses.
+Today exactly one link is ever crossed: ASCC declares no confidence for
+indirect pairs (see "Transitivity: direct facts only").
 
-    effective = resolution.confidence * PRODUCT(bridge.confidence)
+    effective = resolution.confidence * bridge.confidence   # direct fact only
+
+Generalises to a product over every link if multi-link chains ever land; the
+effective_confidence() docstring keeps that case explicitly hypothetical.
 
 Example: a Trivy CVE bound to `aws:ec2:instance:datalake-etl` by path
 heuristic (0.5), bridged to `i-0a1b2c3d4e5f67890` (0.95), is a 0.475 claim
@@ -340,12 +345,9 @@ against --numstat column 2.
 - ШАГ 7: expose cluster membership in SARIF via `properties`, never in `fingerprint()` —
   the fingerprint is defined over `resource_ids` and must not change when history is
   attached, or downstream dedup (Code Scanning, DefectDojo) sees every finding as new.
-- Cross-reference ASCC_NOW from ## Determinism and "str(MatchKey) is never parsed" from
-  ## Contracts once ШАГ 6 lands — step-local today, global after.
-- Line 216 states `effective = resolution.confidence * PRODUCT(bridge.confidence)` over
-  every link crossed, which "Transitivity: direct facts only" forbids and the code does
-  not implement (single `direct_confidence`). Reconcile: fix the formula or widen the
-  invariant — decide, do not leave both.
+- Once ШАГ 6 lands, cross-reference `ASCC_NOW` from the Determinism section and
+  the "str(MatchKey) is never parsed" rule from Contracts — step-local today,
+  global after.
 
 ## Operating rules
 
