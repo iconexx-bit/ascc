@@ -337,6 +337,15 @@ against --numstat column 2.
 - `guard-claude-md`, third item: honour `ALLOW_CLAUDE_MD_DELETIONS=N` and pass only when it equals `git diff --numstat` col2, instead of a blanket `--no-verify` that also skips gitleaks.
 - Multi-line CLAUDE.md edits go through a fail-closed script (anchor preconditions + numstat postcondition); paste source text into empty files only, never edit the section in place.
 - `.prettierignore` for CLAUDE.md — format-on-save would reformat it and the guard would read that as deletions.
+- ШАГ 7: expose cluster membership in SARIF via `properties`, never in `fingerprint()` —
+  the fingerprint is defined over `resource_ids` and must not change when history is
+  attached, or downstream dedup (Code Scanning, DefectDojo) sees every finding as new.
+- Cross-reference ASCC_NOW from ## Determinism and "str(MatchKey) is never parsed" from
+  ## Contracts once ШАГ 6 lands — step-local today, global after.
+- Line 216 states `effective = resolution.confidence * PRODUCT(bridge.confidence)` over
+  every link crossed, which "Transitivity: direct facts only" forbids and the code does
+  not implement (single `direct_confidence`). Reconcile: fix the formula or widen the
+  invariant — decide, do not leave both.
 
 ## Operating rules
 
@@ -562,6 +571,34 @@ observed_together carries the second-highest confidence in the table.
 - tests/test_store_invariant.py::test_store_writes_nothing is inverted to
   test_store_persists_facts. Its own docstring authorises exactly this
   edit; test_store_flag_is_output_neutral stays untouched.
+
+### ШАГ 6: store consumer (cross-run identity)
+
+- Payload is `Mapping[str, str]` — flat keys only. Schema v1: `payload_v="1"`,
+  `source`, `evidence`, plus `left.*` / `right.*` carrying `partition`, `service`,
+  `resource_type`, `identifier` of each MatchKey.
+- `str(MatchKey)` is NEVER parsed back. It feeds `Finding.dedup_key` and the SARIF
+  fingerprint, and it is not injectively parseable anyway (unescaped ':'); a durable
+  on-disk format must not inherit a presentation format (see `_to_fact`, ШАГ 5).
+- CLI order is read -> correlate -> write. Reading after writing would let a run read
+  its own fresh facts and mask an empty history.
+- Ghost node = a MatchKey present only in history, absent from this run's input.
+  It joins clusters as an ordinary node; see "Transitivity: direct facts only" for
+  what that does and does not say about confidence.
+- A ghost node participates in `representative(cluster)` on equal terms, so the console
+  may name a key absent from this run's input. Intended: the representative is a
+  property of the cluster, and the cluster includes history.
+- Historical facts are filtered on read: `stale` (already stamped by `all(now=)`) and
+  `method="llm"` are excluded from Union-Find. No clamping and no unknown-method
+  branch: `put()` enforces `MAX_CONFIDENCE` and rejects methods absent from TTL policy.
+- `ASCC_NOW` (RFC3339) overrides the clock. Required: `observed_together`, the only
+  live bridge method, has a 7-day TTL, so a committed history fixture would expire and
+  break CI with no code change. `facts.jsonl` is never committed as a golden file;
+  tests build history via `repo.put(..., now=frozen)`.
+- DoD: with a populated store, the second run's `CorrelationRun.clusters` contain a
+  ghost key. "Correlation output" above means exactly that — measured 2026-09-13,
+  `to_sarif` reads no cluster state, so SARIF bytes are unchanged and exposure is
+  ШАГ 7. `test_store_flag_is_output_neutral` stays green unchanged.
 
 ## Kubernetes
 
