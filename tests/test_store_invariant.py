@@ -13,6 +13,9 @@ test_store_persists_facts replaces test_store_writes_nothing, the tripwire
 Step 1 laid for this change. Inverted in the red commit, not by the
 implementation agent, as its docstring required: the first implementation
 that persists a Fact changes it consciously.
+test_store_persists_facts is widened again for payload v1 in the ШАГ 6 red
+commit — same rule, same reason: the first implementation that writes the new
+payload changes this assertion consciously, not the implementation agent.
 """
 
 from __future__ import annotations
@@ -35,6 +38,21 @@ EXPECTED_KEYS = {
         "aws:ec2:security-group:datalake-etl-sg",
         "aws:ec2:security-group:sg-0f9e8d7c6b5a43210",
     ),
+}
+# payload v1 (CLAUDE.md, "### ШАГ 6: store consumer"). Fact.payload is
+# Mapping[str, str], so endpoints are flat prefixed keys, never nested.
+EXPECTED_PAYLOAD_KEYS = {
+    "payload_v",
+    "source",
+    "evidence",
+    "left.partition",
+    "left.service",
+    "left.resource_type",
+    "left.identifier",
+    "right.partition",
+    "right.service",
+    "right.resource_type",
+    "right.identifier",
 }
 
 
@@ -94,5 +112,6 @@ def test_store_persists_facts(tmp_path: Path) -> None:
     assert {f.key for f in facts} == EXPECTED_KEYS
     for f in facts:
         assert f.method == "observed_together", f.method
-        assert set(f.payload) == {"source", "evidence"}, f.payload
+        assert set(f.payload) == EXPECTED_PAYLOAD_KEYS, f.payload
+        assert f.payload["payload_v"] == "1", f.payload
         assert before - timedelta(seconds=1) <= f.observed_at <= after
