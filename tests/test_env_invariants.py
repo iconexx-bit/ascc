@@ -3,6 +3,7 @@
 import pathlib
 import re
 import shutil
+import subprocess
 import sys
 
 import pytest
@@ -40,3 +41,16 @@ def test_hooks_delegate_to_just():
 def test_no_tests_outside_tests_dir():
     stray = [str(p) for p in (ROOT / "src").rglob("test_*.py")]
     assert not stray, f"тесты вне tests/: {stray}"
+
+
+def test_hooks_path_is_configured():
+    """A fresh clone has no core.hooksPath; without it .githooks/pre-commit
+    never runs and the repo has no local gate at all. `just init-hooks` sets it."""
+    out = subprocess.run(
+        ["git", "config", "--get", "core.hooksPath"],
+        capture_output=True,
+        text=True,
+        cwd=ROOT,
+        check=False,
+    )
+    assert out.stdout.strip() == ".githooks", "just init-hooks не выполнен"

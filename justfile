@@ -10,8 +10,8 @@ deps-check:
 
 # Форматирование и статический анализ
 lint:
-    uv run --locked ruff check --no-cache
-    uv run --locked ruff format --check --no-cache
+    uv run --locked ruff check --no-cache .
+    uv run --locked ruff format --check --no-cache .
 
 # Инварианты окружения — гейт для остального
 test-env:
@@ -24,7 +24,8 @@ test: test-env
 # Диагностика: что видит just
 show:
     just --dump
-    # Привести .venv в соответствие с lock (МУТИРУЕТ окружение)
+
+# Привести .venv в соответствие с lock (МУТИРУЕТ окружение)
 sync:
     uv sync --locked --extra dev
 
@@ -35,3 +36,9 @@ guard-claude-md:
      fi; \
      git diff --cached --numstat -- CLAUDE.md \
      | awk '$2 != 0 { print "CLAUDE.md: " $2 " line(s) deleted — manual review required" > "/dev/stderr"; exit 1 }'
+
+# Git hooks live in .githooks; core.hooksPath is per-clone and must be set.
+init-hooks:
+    git config core.hooksPath .githooks
+    @test -x .githooks/pre-commit || (echo "pre-commit not executable" >&2; exit 1)
+    @echo "hooks: core.hooksPath=$(git config --get core.hooksPath)"
