@@ -17,7 +17,7 @@ Trivy scans the filesystem of a production host at `/opt/datalake-etl` and repor
 $ ascc correlate --input fixtures/leaky_data_lake/
 Read 3 file(s) (checkov, prowler, trivy), skipped 1
 Skipping README.md: not valid JSON
-                                                            Resources                                                            
+                                                            Resources
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Key                                         ┃ Refs ┃ Scanners                ┃ Tags                                           ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -28,14 +28,14 @@ Skipping README.md: not valid JSON
 │ aws:ec2:instance:datalake-etl               │ 4    │ trivy                   │                                                │
 │ aws:ec2:security-group:datalake-etl-sg      │ 1    │ trivy                   │                                                │
 └─────────────────────────────────────────────┴──────┴─────────────────────────┴────────────────────────────────────────────────┘
-                                                                               Clusters                                                                                
+                                                                               Clusters
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Representative                              ┃ Left                                   ┃ Right                                       ┃ Method            ┃ Confidence ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
 │ aws:ec2:security-group:sg-0f9e8d7c6b5a43210 │ aws:ec2:security-group:datalake-etl-sg │ aws:ec2:security-group:sg-0f9e8d7c6b5a43210 │ observed_together │ 0.95       │
 │ aws:ec2:instance:i-0a1b2c3d4e5f67890        │ aws:ec2:instance:datalake-etl          │ aws:ec2:instance:i-0a1b2c3d4e5f67890        │ observed_together │ 0.95       │
 └─────────────────────────────────────────────┴────────────────────────────────────────┴─────────────────────────────────────────────┴───────────────────┴────────────┘
-                                                                    Findings                                                                     
+                                                                    Findings
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Finding                                                          ┃ Resource                                    ┃ Confidence                   ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -108,8 +108,8 @@ ingest -> correlate -> score -> [export]
 |---|---|
 | `schema/` | Identity resolution with provenance (`MatchKey`, `resolve()`), cluster bridging (`BridgeFact`, `ResourceCluster`) |
 | `ingest/` | Trivy, Prowler, Checkov parsers behind a common `ScannerParser` interface, plus a `sniff()`-based registry dispatcher |
-| `store/` | not started (JSONL first, PostgreSQL + pgvector later) | 
-| `correlate/` | `IdentityBridge` (clustering) + `CorrelationRun` (tag-conflict resolution, `effective_confidence()`) |
+| `store/` | not started (JSONL first, PostgreSQL + pgvector later) |
+| `correlate/` | `build_clusters()` → `ResourceCluster` (Union-Find clustering, `bridge.py`) + `CorrelationRun` (tag-conflict resolution, `effective_confidence()`, `run.py`) |
 | `export/` | `to_sarif()` — SARIF 2.1.0, deterministic result ordering, `--output PATH` with atomic write |
 
 17 test modules; CI runs lint, format check, tests, and a determinism
