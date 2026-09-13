@@ -139,7 +139,7 @@ def correlate(
             os.replace(tmp_name, output)
             tmp_name = None
         except OSError as exc:
-            Console(stderr=True).print(f"[red]Failed to write SARIF output:[/red] {exc}")
+            typer.echo(f"Failed to write SARIF output: {exc}", err=True)
             raise typer.Exit(code=ExitCode.INTERNAL) from None
         finally:
             if tmp_name is not None and os.path.exists(tmp_name):
@@ -158,7 +158,7 @@ def correlate(
                 for bf in run.bridge_facts:
                     repo.put(_to_fact(bf, observed_at=now), now=now)
         except OSError as exc:
-            Console(stderr=True).print(f"[red]Failed to persist store:[/red] {exc}")
+            typer.echo(f"Failed to persist store: {exc}", err=True)
             if output is None:
                 raise typer.Exit(code=ExitCode.INTERNAL) from None
 
