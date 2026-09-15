@@ -416,6 +416,7 @@ After the tag (unordered): asciinema + README metric; Wazuh blog post;
 ascc-extras rerank (gate MRR > 0.8662); guards/ vendoring; K8s IRSA go/no-go.
 
 Ceilings: Step 7 <= 2026-09-27; v0.1.0 <= 2026-10-04; blog <= 2026-10-11.
+Update 2026-09-15: Step 7 and v0.1.0 closed ahead of their ceilings; blog ceiling unchanged.
 Session rules: never leave a red test overnight; close every session with one
 status line (items closed, next item); new tooling ideas go to ## BACKLOG,
 not into code; commit subjects in English only.
