@@ -404,7 +404,7 @@ pulls the next ceiling forward. Nothing above the tag starts before the tag.
        DoD: ghost node present in output; determinism job green.
 2. [x] Ghost-ordering determinism test in CI.
        DoD: two runs sharing one store produce byte-identical SARIF.
-3. [ ] `just demo` recipe.
+3. [x] `just demo` recipe.
        DoD: one command runs twice, diffs, prints the ghost node. ASCC_NOW pinned.
 4. [ ] CHANGELOG backfill for v0.1.0-rc..main (Added/Fixed only).
        DoD: no feat/fix commit since the rc is unaccounted for.
