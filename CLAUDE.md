@@ -392,6 +392,31 @@ proposing scope.
 
 ## Status
 
+### Release queue — v0.1.0
+
+Pull, do not schedule. Take the top open item; never choose between items.
+Dates are ceilings ("not later than"), never targets. An item closed early
+pulls the next ceiling forward. Nothing above the tag starts before the tag.
+
+1. [ ] Step 7 — to_sarif reads cluster state; ghost nodes visible in SARIF.
+       DoD: ghost node present in output; determinism job green.
+2. [ ] Ghost-ordering determinism test in CI.
+       DoD: two runs sharing one store produce byte-identical SARIF.
+3. [ ] `just demo` recipe.
+       DoD: one command runs twice, diffs, prints the ghost node. ASCC_NOW pinned.
+4. [ ] CHANGELOG backfill for v0.1.0-rc..main (Added/Fixed only).
+       DoD: no feat/fix commit since the rc is unaccounted for.
+5. [ ] Tag v0.1.0 (signed) + GitHub Release; rc marked prerelease.
+       DoD: `gh release list` shows two entries.
+
+After the tag (unordered): asciinema + README metric; Wazuh blog post;
+ascc-extras rerank (gate MRR > 0.8662); guards/ vendoring; K8s IRSA go/no-go.
+
+Ceilings: Step 7 <= 2026-09-27; v0.1.0 <= 2026-10-04; blog <= 2026-10-11.
+Session rules: never leave a red test overnight; close every session with one
+status line (items closed, next item); new tooling ideas go to ## BACKLOG,
+not into code; commit subjects in English only.
+
 2026-08-23: TOOLING FREEZE lifted at v0.1.0-rc (commit bc809806).
 New tooling ideas go to ## BACKLOG as one-liners, not code.
 Exception: CI-blocking failures only.
