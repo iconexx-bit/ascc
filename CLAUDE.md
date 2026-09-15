@@ -391,6 +391,7 @@ against --numstat column 2.
 and the dev-deps consolidation fix. Schema-validation test stays deferred
 to 0.1.1. Lesson: check branch history for prior scope decisions before
 proposing scope.
+- Terminal: single-line commands only. Multi-line blocks go through task.md or the editor — VS Code shell integration (OSC 633) leaks markers into redirected output.
 
 ## Status
 
@@ -420,6 +421,7 @@ status line (items closed, next item); new tooling ideas go to ## BACKLOG,
 not into code; commit subjects in English only.
 
 2026-08-23: TOOLING FREEZE lifted at v0.1.0-rc (commit bc809806).
+2026-09-15: TOOLING FREEZE lifted at v0.1.0 (commit ffc35b6).
 New tooling ideas go to ## BACKLOG as one-liners, not code.
 Exception: CI-blocking failures only.
 rc scope (cut 2026-08-20): v0.1.0-rc ships to_sarif() + --output + determinism test.
