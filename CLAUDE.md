@@ -285,8 +285,7 @@ would throw away the finding.
 - agg for asciinema→GIF (cargo install --locked agg, or asciinema upload)
 - deny-pattern "Edit(./fixtures/**)" in .claude/settings.json not anchored to root, incidentally blocks tests/fixtures/ too — audit/anchor post-rc
 - audit stray pip/uv installs bypassing lockfile — venv drifted to 66 extra packages (llama-index stack) outside uv.lock on 18.08, caught by deps-check pre-commit hook before merge
-- identity: `MatchKey.__str__` is not injectively parseable (unescaped ':') — opaque-key-only contract
-- deps: pyproject had two parallel dev mechanisms (optional-dependencies + dependency-groups); `pre-commit` was never installed by `just`. Consolidated to extras; evaluate PEP 735 migration post-rc.
+- deps: pyproject had two parallel dev mechanisms (optional-dependencies + dependency-groups); consolidated to extras. `pre-commit` (4.6.2) is installed but unused — core.hooksPath points at .githooks and no hook invokes it; removing it touches uv.lock, so it is deferred. Evaluate PEP 735 migration post-rc.
 - docs: delegation-log table delimiter row violates MD060; align when markdownlint lands in CI
 - docs: add docs/prompts/working-agreement.md (workflow contract + operating rules); mirror to userPreferences
 - docs: code for the editor is given bare, never wrapped in a shell heredoc; long terminal output goes through a file
@@ -339,7 +338,7 @@ bullets (they render as `--`) and blank lines. Use
 `git show <sha> -- FILE | grep '^-' | grep -v '^---'` and check the count
 against --numstat column 2.
 - Error output: paths and any untrusted string go to stderr via `typer.echo(..., err=True)`, never Rich markup — a `[/x]` in a path raised MarkupError inside the handler and replaced the exit code with a traceback (fixed in `fix(cli)`).
-- `guard-claude-md`, third item: honour `ALLOW_CLAUDE_MD_DELETIONS=N` and pass only when it equals `git diff --numstat` col2, instead of a blanket `--no-verify` that also skips gitleaks.
+- `guard-claude-md`, third item: the variable is `ALLOW_CLAUDE_MD_DELETE` and it only tests non-emptiness. Make it honour `ALLOW_CLAUDE_MD_DELETE=N` and pass only when N equals `git diff --numstat` col2. ШАГ 4 used a blanket `--no-verify` when this scoped bypass already existed.
 - Multi-line CLAUDE.md edits go through a fail-closed script (anchor preconditions + numstat postcondition); paste source text into empty files only, never edit the section in place.
 - `.prettierignore` for CLAUDE.md — format-on-save would reformat it and the guard would read that as deletions.
 - ШАГ 7: expose cluster membership in SARIF via `properties`, never in `fingerprint()` —
