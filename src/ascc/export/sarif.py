@@ -6,6 +6,7 @@ import hashlib
 import json
 
 from ascc.correlate.run import CorrelationRun
+from ascc.schema.identity import MatchKey
 from ascc.schema.models import Finding
 from ascc.schema.taxonomy import Severity
 
@@ -63,10 +64,35 @@ def _rule(finding: Finding) -> dict:
     }
 
 
-def _result(finding: Finding) -> dict:
+def _cluster_properties(finding: Finding, run: CorrelationRun) -> dict[str, list[str]]:
+    """Cluster/ghost membership for a finding's resources (CLAUDE.md, "ШАГ 7").
+
+    A finding's resolutions (not resource_ids: MatchKey.__str__ is not
+    parseable back, CLAUDE.md "ШАГ 6") may land in more than one cluster —
+    members is the union across all of them. A ghost is a cluster member
+    absent from this run's own `resources`, i.e. reachable only through a
+    bridge fact replayed from history (ШАГ 6), never from this run's ingest.
+    Returns {} when the finding touches no cluster at all — to_sarif emits
+    no empty lists.
+    """
+    resolution_keys = {resolution.key for resolution in finding.resolutions}
+    members: set[MatchKey] = set()
+    for cluster in run.clusters:
+        if resolution_keys & cluster.keys:
+            members |= cluster.keys
+    if not members:
+        return {}
+    properties: dict[str, list[str]] = {"cluster_members": sorted(str(key) for key in members)}
+    ghosts = sorted(str(key) for key in members if str(key) not in run.resources)
+    if ghosts:
+        properties["ghost_members"] = ghosts
+    return properties
+
+
+def _result(finding: Finding, run: CorrelationRun) -> dict:
     level, _ = _LEVEL_BY_SEVERITY[finding.severity]
     resource_ids = sorted(finding.resource_ids)
-    return {
+    result: dict = {
         "ruleId": _rule_id(finding),
         "level": level,
         "message": {"text": finding.title},
@@ -76,6 +102,10 @@ def _result(finding: Finding) -> dict:
         ],
         "partialFingerprints": {FINGERPRINT_VERSION: fingerprint(finding)},
     }
+    properties = _cluster_properties(finding, run)
+    if properties:
+        result["properties"] = properties
+    return result
 
 
 def to_sarif(run: CorrelationRun) -> dict:
@@ -96,7 +126,7 @@ def to_sarif(run: CorrelationRun) -> dict:
         rules.setdefault(rule_id, _rule(finding))
         resource_ids = sorted(finding.resource_ids)
         sort_resource_id = resource_ids[0] if resource_ids else ""
-        results.append((rule_id, sort_resource_id, finding.title, _result(finding)))
+        results.append((rule_id, sort_resource_id, finding.title, _result(finding, run)))
 
     # CLAUDE.md, "Determinism": results[] sorted by (ruleId, resource_id, message).
     results.sort(key=lambda r: (r[0], r[1], r[2]))
