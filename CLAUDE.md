@@ -378,6 +378,8 @@ against --numstat column 2.
   A --no-verify commit therefore cannot skip the secret scan. Intentional.
 - deps: `pre-commit` is still in dev extras but no hook uses it; removing it touches
   uv.lock, so it is deferred, not forgotten.
+- from_history flag on replayed store facts — replaces the run.resources proxy for ghost detection.
+- rename remaining 'ШАГ N' section headings to 'Step N' across CLAUDE.md.
 
 ## Operating rules
 
@@ -398,9 +400,9 @@ Pull, do not schedule. Take the top open item; never choose between items.
 Dates are ceilings ("not later than"), never targets. An item closed early
 pulls the next ceiling forward. Nothing above the tag starts before the tag.
 
-1. [ ] Step 7 — to_sarif reads cluster state; ghost nodes visible in SARIF.
+1. [x] Step 7 — to_sarif reads cluster state; ghost nodes visible in SARIF.
        DoD: ghost node present in output; determinism job green.
-2. [ ] Ghost-ordering determinism test in CI.
+2. [x] Ghost-ordering determinism test in CI.
        DoD: two runs sharing one store produce byte-identical SARIF.
 3. [ ] `just demo` recipe.
        DoD: one command runs twice, diffs, prints the ghost node. ASCC_NOW pinned.
@@ -656,6 +658,10 @@ observed_together carries the second-highest confidence in the table.
   ghost key. "Correlation output" above means exactly that — measured 2026-09-13,
   `to_sarif` reads no cluster state, so SARIF bytes are unchanged and exposure is
   ШАГ 7. `test_store_flag_is_output_neutral` stays green unchanged.
+- Ghost detection is a proxy: a ghost is a cluster key absent from
+  run.resources. Every parser resolution MUST record a Resource, or a
+  live resource will be reported as a ghost. Exact provenance
+  (from_history on replayed facts) is backlogged.
 
 ## Kubernetes
 
