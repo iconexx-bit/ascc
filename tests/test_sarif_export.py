@@ -10,7 +10,7 @@ from ascc.ingest.checkov import CheckovParser
 from ascc.ingest.prowler import ProwlerParser
 from ascc.ingest.trivy import TrivyParser
 from ascc.schema.identity import IdentityClass, MatchKey, Resolution
-from ascc.schema.models import Finding, ScanRun
+from ascc.schema.models import BridgeFact, Finding, Resource, ScanRun
 from ascc.schema.taxonomy import Category, Severity
 
 
@@ -197,3 +197,84 @@ def test_results_sorted_by_resource_id_within_same_rule() -> None:
     results = doc["runs"][0]["results"]
     resource_ids = [r["locations"][0]["logicalLocations"][0]["fullyQualifiedName"] for r in results]
     assert resource_ids == sorted(resource_ids)
+
+
+# --- cluster / ghost membership (CLAUDE.md, "ШАГ 7") --------------------------
+
+
+def _bridge(a: MatchKey, b: MatchKey, confidence: float = 0.95) -> BridgeFact:
+    return BridgeFact(
+        left=a,
+        right=b,
+        method="observed_together",
+        confidence=confidence,
+        source="test",
+        evidence="test",
+    )
+
+
+def _clustered_run(
+    finding: Finding, *, bridge_facts: tuple[BridgeFact, ...], known_keys: tuple[MatchKey, ...]
+) -> CorrelationRun:
+    """A ScanRun with an explicit `resources` map: real ingest records one
+    Resource per resolution (CLAUDE.md, "_record_resource"), which is what
+    distinguishes an ordinary cluster member from a ghost. `_synthetic_run`
+    leaves `resources` empty, which would make every member look like a
+    ghost -- wrong for these tests, so they build the ScanRun directly."""
+    resources = {str(k): Resource(key=k) for k in known_keys}
+    scan_run = ScanRun(
+        scanner="test", findings=[finding], resources=resources, bridge_facts=list(bridge_facts)
+    )
+    return correlate([scan_run])
+
+
+def test_no_properties_when_finding_is_not_clustered() -> None:
+    finding = _finding(
+        "test", "R1", "solo", Severity.LOW, MatchKey("aws", "ec2", "instance", "solo")
+    )
+    doc = to_sarif(_synthetic_run(finding))
+    assert "properties" not in doc["runs"][0]["results"][0]
+
+
+def test_cluster_members_present_when_finding_is_bridged() -> None:
+    a = MatchKey("aws", "ec2", "instance", "a")
+    b = MatchKey("aws", "ec2", "instance", "b")
+    finding = _finding("test", "R1", "bridged", Severity.LOW, a)
+    run = _clustered_run(finding, bridge_facts=(_bridge(a, b),), known_keys=(a, b))
+    result = to_sarif(run)["runs"][0]["results"][0]
+    assert result["properties"]["cluster_members"] == sorted([str(a), str(b)])
+
+
+def test_ghost_members_omitted_when_all_members_are_this_runs_own() -> None:
+    a = MatchKey("aws", "ec2", "instance", "a")
+    b = MatchKey("aws", "ec2", "instance", "b")
+    finding = _finding("test", "R1", "bridged", Severity.LOW, a)
+    run = _clustered_run(finding, bridge_facts=(_bridge(a, b),), known_keys=(a, b))
+    result = to_sarif(run)["runs"][0]["results"][0]
+    assert "ghost_members" not in result["properties"]
+
+
+def test_ghost_members_present_for_key_absent_from_this_runs_resources() -> None:
+    """CLAUDE.md, "ШАГ 6": a ghost is a MatchKey present only in history --
+    here modelled as a bridge fact endpoint that never got its own Resource
+    entry, exactly what a key replayed from the store but absent from this
+    run's ingest looks like."""
+    a = MatchKey("aws", "ec2", "instance", "a")
+    ghost = MatchKey("aws", "ec2", "instance", "ghost")
+    finding = _finding("test", "R1", "with ghost", Severity.LOW, a)
+    run = _clustered_run(finding, bridge_facts=(_bridge(a, ghost),), known_keys=(a,))
+    result = to_sarif(run)["runs"][0]["results"][0]
+    assert result["properties"]["ghost_members"] == [str(ghost)]
+
+
+def test_cluster_members_never_empty_list() -> None:
+    """CLAUDE.md task scope: emit cluster_members/ghost_members only when
+    non-empty -- never an empty list sitting in properties."""
+    finding = _finding(
+        "test", "R1", "solo", Severity.LOW, MatchKey("aws", "ec2", "instance", "solo")
+    )
+    doc = to_sarif(_synthetic_run(finding))
+    result = doc["runs"][0]["results"][0]
+    if "properties" in result:
+        assert result["properties"].get("cluster_members") != []
+        assert result["properties"].get("ghost_members") != []

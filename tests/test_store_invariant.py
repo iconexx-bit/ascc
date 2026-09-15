@@ -2,9 +2,14 @@
 
 CLAUDE.md, "Store": an ABSENT or EMPTY store produces byte-identical SARIF.
 The flag alone never leaks persistence into the artifact. A populated store
-legitimately changes output; that is Step 6, not a violation.
-test_store_flag_is_output_neutral tests exactly this form: it points --store
-at a fresh, empty tmp directory.
+legitimately changes output; that is ШАГ 7 (to_sarif reads
+CorrelationRun.clusters), not a violation — ШАГ 6 only reached
+CorrelationRun.clusters, and measurably left SARIF bytes untouched (see
+CLAUDE.md, "ШАГ 6: store consumer", DoD note). test_store_flag_is_output_neutral
+tests exactly the neutral form: it points --store at a fresh, empty tmp
+directory.  test_populated_store_exposes_ghost_membership_in_sarif is the
+companion on the other side of that line: same fixture, a store the first
+run actually populated, and it must NOT be byte-identical to the neutral case.
 
 Raw byte comparison, matching test_cli_golden.py: the SARIF output has no
 volatile fields, so normalization would only weaken the assertion.
@@ -20,6 +25,8 @@ payload changes this assertion consciously, not the implementation agent.
 
 from __future__ import annotations
 
+import json
+import shutil
 import subprocess
 import sys
 from datetime import UTC, datetime, timedelta
@@ -57,7 +64,7 @@ EXPECTED_PAYLOAD_KEYS = {
 
 
 def _run_correlate(
-    output: Path, *, store: Path | None = None
+    output: Path, *, store: Path | None = None, input_dir: str | Path = FIXTURE_REL
 ) -> subprocess.CompletedProcess[bytes]:
     cmd = [
         sys.executable,
@@ -65,13 +72,31 @@ def _run_correlate(
         "ascc",
         "correlate",
         "--input",
-        FIXTURE_REL,
+        str(input_dir),
         "--output",
         str(output),
     ]
     if store is not None:
         cmd += ["--store", str(store)]
     return subprocess.run(cmd, check=False, cwd=REPO_ROOT, capture_output=True)
+
+
+def _fixture_without_prowler(tmp_path: Path) -> Path:
+    """A copy of the fixture missing prowler.json.
+
+    Only Prowler ever observes the generated-id ARNs for the EC2 instance
+    (`i-0a1b2c3d4e5f67890`) and its security group (`sg-0f9e8d7c6b5a43210`)
+    -- verified by grep against the raw fixtures. Dropping its file removes
+    those two keys from THIS run's own `resources` while Trivy's natural-name
+    keys (`datalake-etl`, `datalake-etl-sg`) stay put: exactly the shape of a
+    ghost node reintroduced from a store the first run already populated.
+    """
+    reduced = tmp_path / "reduced"
+    reduced.mkdir()
+    for file in (REPO_ROOT / FIXTURE_REL).iterdir():
+        if file.is_file() and file.name != "prowler.json":
+            shutil.copy2(file, reduced / file.name)
+    return reduced
 
 
 def test_store_flag_is_output_neutral(tmp_path: Path) -> None:
@@ -115,3 +140,36 @@ def test_store_persists_facts(tmp_path: Path) -> None:
         assert set(f.payload) == EXPECTED_PAYLOAD_KEYS, f.payload
         assert f.payload["payload_v"] == "1", f.payload
         assert before - timedelta(seconds=1) <= f.observed_at <= after
+
+
+def test_populated_store_exposes_ghost_membership_in_sarif(tmp_path: Path) -> None:
+    """CLAUDE.md ШАГ 7: a populated store legitimately changes SARIF bytes.
+
+    Run 1 (full fixture) persists Prowler's observed_together facts. Run 2
+    reads that history back over a fixture copy missing prowler.json, so the
+    generated-id ARNs it bridges to are ghosts -- present only via history,
+    absent from run 2's own resources -- and must show up in
+    properties.ghost_members on the Trivy result that shares their cluster.
+    """
+    store = tmp_path / "facts"
+
+    run1 = _run_correlate(tmp_path / "run1.sarif.json", store=store)
+    assert run1.returncode == 0, f"run 1 failed: {run1.stderr.decode()}"
+
+    reduced_input = _fixture_without_prowler(tmp_path)
+    run2_out = tmp_path / "run2.sarif.json"
+    run2 = _run_correlate(run2_out, store=store, input_dir=reduced_input)
+    assert run2.returncode == 0, f"run 2 failed: {run2.stderr.decode()}"
+
+    results = json.loads(run2_out.read_bytes())["runs"][0]["results"]
+    log4shell = next(r for r in results if "CVE-2021-44228" in r["ruleId"])
+    assert log4shell["properties"]["ghost_members"] == ["aws:ec2:instance:i-0a1b2c3d4e5f67890"]
+    assert log4shell["properties"]["cluster_members"] == [
+        "aws:ec2:instance:datalake-etl",
+        "aws:ec2:instance:i-0a1b2c3d4e5f67890",
+    ]
+
+    ssh_open = next(r for r in results if "AVD-AWS-0107" in r["ruleId"])
+    assert ssh_open["properties"]["ghost_members"] == [
+        "aws:ec2:security-group:sg-0f9e8d7c6b5a43210"
+    ]
