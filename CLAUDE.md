@@ -22,13 +22,13 @@
 - src/ascc/correlate/   — ядро корреляции и рассуждения, суть проекта.
   bridge.py, run.py — реализованы
 - src/ascc/store/       — персистентность фактов. ПУСТО, см. «Архитектура»
-- src/ascc/export/      — рендер в SARIF. ПУСТО
+- src/ascc/export/      — рендер в SARIF. to_sarif() + --output (v0.1.0-rc)
 - tests/                — pytest, зеркалит модули: test_trivy.py, test_prowler.py,
   test_checkov.py, test_registry.py, test_identity.py, test_bridge.py,
   test_bridge_gap.py, test_correlate.py, test_correlate_confidence.py,
   test_cli.py, conftest.py
 
-Порядок реализации: schema -> ingest -> correlate. store/ и export/ — post-v0.1.
+Порядок реализации: schema -> ingest -> correlate -> export. store/ — post-v0.1.
 См. раздел «Архитектура» ниже: correlate реализован раньше store намеренно.
 
 ## Архитектура
@@ -338,7 +338,9 @@ bullets (they render as `--`) and blank lines. Use
 `git show <sha> -- FILE | grep '^-' | grep -v '^---'` and check the count
 against --numstat column 2.
 - Error output: paths and any untrusted string go to stderr via `typer.echo(..., err=True)`, never Rich markup — a `[/x]` in a path raised MarkupError inside the handler and replaced the exit code with a traceback (fixed in `fix(cli)`).
-- `guard-claude-md`, third item: the variable is `ALLOW_CLAUDE_MD_DELETE` and it only tests non-emptiness. Make it honour `ALLOW_CLAUDE_MD_DELETE=N` and pass only when N equals `git diff --numstat` col2. Step 4 used a blanket `--no-verify` when this scoped bypass already existed.
+- `guard-claude-md`, third item: RESOLVED 2026-09-16 — the scoped-bypass idea is
+  obsolete. The env bypass is removed; authority moved to
+  tests/test_claude_md_contracts.py (CI-enforced, no local override).
 - Multi-line CLAUDE.md edits go through a fail-closed script (anchor preconditions + numstat postcondition); paste source text into empty files only, never edit the section in place.
 - `.prettierignore` for CLAUDE.md — format-on-save would reformat it and the guard would read that as deletions.
 - Step 7: expose cluster membership in SARIF via `properties`, never in `fingerprint()` —
@@ -379,7 +381,6 @@ against --numstat column 2.
 - deps: `pre-commit` is still in dev extras but no hook uses it; removing it touches
   uv.lock, so it is deferred, not forgotten.
 - from_history flag on replayed store facts — replaces the run.resources proxy for ghost detection.
-- rename remaining 'Step N' section headings to 'Step N' across CLAUDE.md.
 
 ## Operating rules
 
