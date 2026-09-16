@@ -338,19 +338,19 @@ bullets (they render as `--`) and blank lines. Use
 `git show <sha> -- FILE | grep '^-' | grep -v '^---'` and check the count
 against --numstat column 2.
 - Error output: paths and any untrusted string go to stderr via `typer.echo(..., err=True)`, never Rich markup — a `[/x]` in a path raised MarkupError inside the handler and replaced the exit code with a traceback (fixed in `fix(cli)`).
-- `guard-claude-md`, third item: the variable is `ALLOW_CLAUDE_MD_DELETE` and it only tests non-emptiness. Make it honour `ALLOW_CLAUDE_MD_DELETE=N` and pass only when N equals `git diff --numstat` col2. ШАГ 4 used a blanket `--no-verify` when this scoped bypass already existed.
+- `guard-claude-md`, third item: the variable is `ALLOW_CLAUDE_MD_DELETE` and it only tests non-emptiness. Make it honour `ALLOW_CLAUDE_MD_DELETE=N` and pass only when N equals `git diff --numstat` col2. Step 4 used a blanket `--no-verify` when this scoped bypass already existed.
 - Multi-line CLAUDE.md edits go through a fail-closed script (anchor preconditions + numstat postcondition); paste source text into empty files only, never edit the section in place.
 - `.prettierignore` for CLAUDE.md — format-on-save would reformat it and the guard would read that as deletions.
-- ШАГ 7: expose cluster membership in SARIF via `properties`, never in `fingerprint()` —
+- Step 7: expose cluster membership in SARIF via `properties`, never in `fingerprint()` —
   the fingerprint is defined over `resource_ids` and must not change when history is
   attached, or downstream dedup (Code Scanning, DefectDojo) sees every finding as new.
-- Once ШАГ 6 lands, cross-reference `ASCC_NOW` from the Determinism section and
+- Once Step 6 lands, cross-reference `ASCC_NOW` from the Determinism section and
   the "str(MatchKey) is never parsed" rule from Contracts — step-local today,
   global after.
 - lint: a green local `ruff check` without `--no-cache` proves nothing — `.ruff_cache`
   returned a stale clean verdict for tests/test_history.py and let I001 reach main
   (063753e, fixed in 01695d6). The justfile recipe now passes --no-cache.
-- docs: `### ШАГ 5` is indented two spaces; ATX headings with 1–3 leading spaces still
+- docs: `### Step 5` is indented two spaces; ATX headings with 1–3 leading spaces still
   render but escape `grep -n "^## "` section maps. Normalise when markdownlint lands (MD023).
 - docs: commit bodies over one line go into /tmp/msg-*.txt via the editor; verify with
   `git log -1 --format='%B'` right after any --no-verify commit.
@@ -364,7 +364,7 @@ against --numstat column 2.
   working-copy invariant and is false in CI; it needs skipif(CI) with the reason in the
   skip text. Package invariants (entrypoint, no tests outside tests/) hold everywhere.
 - tooling: pasting a multi-line block into the editor dropped a newline or a character
-  five times in one session (### ШАГ 6 heading, a Backlog bullet, justfile `show:`,
+  five times in one session (### Step 6 heading, a Backlog bullet, justfile `show:`,
   `def` where `@` belonged). Re-parse right after every multi-line edit: `just --list`
   for the justfile, `python3 -c "import ast; ast.parse(...)"` for Python, precheck greps
   for docs.
@@ -372,14 +372,14 @@ against --numstat column 2.
   green run. test_documented_names_exist_in_source was green until an `IdentityBridge`
   probe appended to README made it fail.
 - tooling: guard-claude-md reads ALLOW_CLAUDE_MD_DELETE, not ..._DELETIONS as an earlier
-  Backlog line says; ШАГ 4 used a blanket --no-verify when the scoped bypass existed.
+  Backlog line says; Step 4 used a blanket --no-verify when the scoped bypass existed.
 - security: gitleaks runs only in CI (ci.yml:47). The local .pre-commit-config.yaml that
   declared it was never executed — core.hooksPath points at .githooks — and is deleted.
   A --no-verify commit therefore cannot skip the secret scan. Intentional.
 - deps: `pre-commit` is still in dev extras but no hook uses it; removing it touches
   uv.lock, so it is deferred, not forgotten.
 - from_history flag on replayed store facts — replaces the run.resources proxy for ghost detection.
-- rename remaining 'ШАГ N' section headings to 'Step N' across CLAUDE.md.
+- rename remaining 'Step N' section headings to 'Step N' across CLAUDE.md.
 
 ## Operating rules
 
@@ -478,7 +478,7 @@ while it held.
 - Invariant: an ABSENT or EMPTY store produces byte-identical SARIF.
   The mere presence of the flag never leaks into the artifact. A
   POPULATED store legitimately changes correlation output — that is the
-  feature, not a violation, and ШАГ 6 depends on it.
+  feature, not a violation, and Step 6 depends on it.
   tests/test_store_invariant.py already tests the correct form: it
   points --store at a fresh tmp directory.
 
@@ -510,7 +510,7 @@ changes, otherwise it is trust smuggled into the volatility axis.
    "datetime.now", "utcnow", "time.time", "time.monotonic" outside # comments.
    Docstrings and string literals count. Do not name these APIs inside the package.
 - Layer provenance: Fact + FactRepository ABC in 5056b89 (models.py, not
-   fact.py); policy.py and InMemoryFactRepository in ШАГ 3.
+   fact.py); policy.py and InMemoryFactRepository in Step 3.
 - Boundary: stale when age >= ttl. as_of < observed_at ⇒ not stale
   (falls out of the formula, no special branch).
 - ascc.store introduces NO effective_confidence of its own. fact.confidence
@@ -533,7 +533,7 @@ changes, otherwise it is trust smuggled into the volatility axis.
   The reverse direction (correlate → store) is allowed.
 - method=terraform ⇒ natural name statically resolved. Indexed addresses
   (for_each/count) and unresolved variables MUST NOT emit a tier-1.0 bridge.
-- ШАГ 3 lands policy/Fact/ABC/InMemory only. CLI wiring (including
+- Step 3 lands policy/Fact/ABC/InMemory only. CLI wiring (including
   writable=True) is a separate step; `--store` stays output-neutral.
 
 | method                           | max_conf | TTL  | volatility   | invalidator (planned)      |
@@ -588,7 +588,7 @@ observed_together carries the second-highest confidence in the table.
   "no arguments" contract was InMemory-shaped and did not survive contact
   with a file-backed repository.
 
-  ### ШАГ 5: CLI wiring + producer
+  ### Step 5: CLI wiring + producer
 
 - --store gains writable=True. exists stays False: the path may not
   exist, and click skips the access check when it does not.
@@ -621,27 +621,27 @@ observed_together carries the second-highest confidence in the table.
 - payload gets its first product writer here. source and evidence have no
   Fact field and would otherwise be dropped.
 - Reading the key back is OUT OF SCOPE: MatchKey.__str__ is not
-  injectively parseable. ШАГ 6 must resolve how a consumer recovers a
+  injectively parseable. Step 6 must resolve how a consumer recovers a
   MatchKey — carry it in payload, or make __str__ round-trippable.
 - A store write failure after the SARIF is on disk warns on stderr and
   keeps ExitCode.OK: the artifact already succeeded.
 - Store-only run (no --output): the store IS the requested product, so a
   store write failure exits ExitCode.INTERNAL with the error on stderr.
   Warn-and-OK above holds only when a SARIF artifact already succeeded.
-  Fail-open here would lose history silently: ШАГ 6 would read an empty
+  Fail-open here would lose history silently: Step 6 would read an empty
   store as "no history".
 - tests/test_store_invariant.py::test_store_writes_nothing is inverted to
   test_store_persists_facts. Its own docstring authorises exactly this
   edit; test_store_flag_is_output_neutral stays untouched.
 
-### ШАГ 6: store consumer (cross-run identity)
+### Step 6: store consumer (cross-run identity)
 
 - Payload is `Mapping[str, str]` — flat keys only. Schema v1: `payload_v="1"`,
   `source`, `evidence`, plus `left.*` / `right.*` carrying `partition`, `service`,
   `resource_type`, `identifier` of each MatchKey.
 - `str(MatchKey)` is NEVER parsed back. It feeds `Finding.dedup_key` and the SARIF
   fingerprint, and it is not injectively parseable anyway (unescaped ':'); a durable
-  on-disk format must not inherit a presentation format (see `_to_fact`, ШАГ 5).
+  on-disk format must not inherit a presentation format (see `_to_fact`, Step 5).
 - CLI order is read -> correlate -> write. Reading after writing would let a run read
   its own fresh facts and mask an empty history.
 - Ghost node = a MatchKey present only in history, absent from this run's input.
@@ -660,7 +660,7 @@ observed_together carries the second-highest confidence in the table.
 - DoD: with a populated store, the second run's `CorrelationRun.clusters` contain a
   ghost key. "Correlation output" above means exactly that — measured 2026-09-13,
   `to_sarif` reads no cluster state, so SARIF bytes are unchanged and exposure is
-  ШАГ 7. `test_store_flag_is_output_neutral` stays green unchanged.
+  Step 7. `test_store_flag_is_output_neutral` stays green unchanged.
 - Ghost detection is a proxy: a ghost is a cluster key absent from
   run.resources. Every parser resolution MUST record a Resource, or a
   live resource will be reported as a ghost. Exact provenance
