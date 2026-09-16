@@ -13,11 +13,81 @@ Trivy scans the filesystem of a production host at `/opt/datalake-etl` and repor
 
 ## Seeing it work
 
-```
-$ ascc correlate --input fixtures/leaky_data_lake/
+```console
+$ uv run ascc correlate --input fixtures/leaky_data_lake/
 Read 3 file(s) (checkov, prowler, trivy), skipped 1
 Skipping README.md: not valid JSON
-                                                            Resources
+```
+
+Two scanners named the same host differently. ASCC found one bridge fact:
+
+```
+                                                                               Clusters                                                                                
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃ Representative                              ┃ Left                                   ┃ Right                                       ┃ Method            ┃ Confidence ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
+│ aws:ec2:security-group:sg-0f9e8d7c6b5a43210 │ aws:ec2:security-group:datalake-etl-sg │ aws:ec2:security-group:sg-0f9e8d7c6b5a43210 │ observed_together │ 0.95       │
+│ aws:ec2:instance:i-0a1b2c3d4e5f67890        │ aws:ec2:instance:datalake-etl          │ aws:ec2:instance:i-0a1b2c3d4e5f67890        │ observed_together │ 0.95       │
+└─────────────────────────────────────────────┴────────────────────────────────────────┴─────────────────────────────────────────────┴───────────────────┴────────────┘
+```
+
+`observed_together` is observational, not deterministic — it earns 0.95, not 1.0, and
+it expires (7-day TTL, run-bound). The confidence describes the *bridge*, not the
+finding. What that bridge does to the findings:
+
+```
+┃ Finding                                                          ┃ Resource                                    ┃ Confidence                   ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ prowler:ec2_instance_public_ip                                   │ aws:ec2:instance:i-0a1b2c3d4e5f67890        │ 1.000                        │
+│ prowler:ec2_instance_public_ip                                   │ aws:ec2:instance:datalake-etl               │ 0.950 = 1.000 x 0.950 bridge │
+│ trivy:CVE-2021-44228                                             │ aws:ec2:instance:datalake-etl               │ 0.500                        │
+│ trivy:CVE-2021-44228                                             │ aws:ec2:instance:i-0a1b2c3d4e5f67890        │ 0.475 = 0.500 x 0.950 bridge │
+```
+
+Log4Shell arrived as a **0.500 claim about a filesystem**. Across one observational
+bridge it is a **0.475 claim about a publicly-reachable EC2 instance** — and the
+arithmetic is printed, not hidden.
+
+Neither key is destroyed. Merging would discard the losing one, and the next scan
+that produces it would have nowhere to land.
+
+## Determinism is a contract
+
+- `results[]` sorted in product code by `(ruleId, resource_id, message)` — ordering is
+  a feature, not a side effect of dict iteration
+- `ASCC_LLM=off` ⇒ byte-identical SARIF except `message.markdown`, enforced in CI by
+  running the pipeline twice and diffing
+- Golden baseline lives in `tests/data/`; the normalizer is test-only, because product
+  code sorts its own output
+- No wall-clock field reaches the export. `ASCC_NOW` overrides the clock so time-
+  dependent behaviour is testable without freezing real time
+- An absent or empty `--store` produces byte-identical SARIF. A populated store
+  legitimately changes correlation output — that is the feature, not a violation
+
+## What the SARIF carries
+
+One result per (rule, resource) — 16 for the reference fixture — deduplicated,
+deterministically ordered, valid against SARIF 2.1.0.
+
+- resource identity in `logicalLocations.fullyQualifiedName`
+  (`aws:ec2:instance:i-0a1b2c3d4e5f67890`)
+- cluster membership in `properties.cluster_members`
+- a stable `partialFingerprints["asccDedupKey/v1"]`, defined over resource identities
+  alone — attaching cross-run history does not re-key existing findings, so re-running
+  updates alerts in Code Scanning or DefectDojo instead of duplicating them
+
+Findings here are resource-centric, not file-centric: there is no `physicalLocation`,
+so viewers that key on source files will index them but not render them inline.
+Multiplied confidence is deliberately CLI-only in v0.1.0-rc; carrying it into
+`properties` is scoped for v0.1.1.
+
+## Inventory
+
+The pre-bridge view — what each scanner reported on its own terms, before identity
+resolution ran:
+
+```
+                                                            Resources                                                            
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Key                                         ┃ Refs ┃ Scanners                ┃ Tags                                           ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -28,41 +98,6 @@ Skipping README.md: not valid JSON
 │ aws:ec2:instance:datalake-etl               │ 4    │ trivy                   │                                                │
 │ aws:ec2:security-group:datalake-etl-sg      │ 1    │ trivy                   │                                                │
 └─────────────────────────────────────────────┴──────┴─────────────────────────┴────────────────────────────────────────────────┘
-                                                                               Clusters
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
-┃ Representative                              ┃ Left                                   ┃ Right                                       ┃ Method            ┃ Confidence ┃
-┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
-│ aws:ec2:security-group:sg-0f9e8d7c6b5a43210 │ aws:ec2:security-group:datalake-etl-sg │ aws:ec2:security-group:sg-0f9e8d7c6b5a43210 │ observed_together │ 0.95       │
-│ aws:ec2:instance:i-0a1b2c3d4e5f67890        │ aws:ec2:instance:datalake-etl          │ aws:ec2:instance:i-0a1b2c3d4e5f67890        │ observed_together │ 0.95       │
-└─────────────────────────────────────────────┴────────────────────────────────────────┴─────────────────────────────────────────────┴───────────────────┴────────────┘
-                                                                    Findings
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Finding                                                          ┃ Resource                                    ┃ Confidence                   ┃
-┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ checkov:CKV_AWS_20                                               │ aws:s3:bucket:datalake-raw                  │ 1.000                        │
-│ checkov:CKV_AWS_19                                               │ aws:s3:bucket:datalake-raw                  │ 1.000                        │
-│ checkov:CKV_AWS_18                                               │ aws:s3:bucket:datalake-raw                  │ 1.000                        │
-│ checkov:CKV_AWS_40                                               │ aws:iam:role:datalake-etl-role              │ 1.000                        │
-│ prowler:s3_bucket_level_public_access_block                      │ aws:s3:bucket:datalake-raw                  │ 1.000                        │
-│ prowler:s3_bucket_default_encryption                             │ aws:s3:bucket:datalake-raw                  │ 1.000                        │
-│ prowler:s3_bucket_server_access_logging_enabled                  │ aws:s3:bucket:datalake-raw                  │ 1.000                        │
-│ prowler:iam_inline_policy_no_administrative_privileges           │ aws:iam:role:datalake-etl-role              │ 1.000                        │
-│ prowler:ec2_securitygroup_allow_ingress_from_internet_to_port_22 │ aws:ec2:security-group:sg-0f9e8d7c6b5a43210 │ 1.000                        │
-│ prowler:ec2_securitygroup_allow_ingress_from_internet_to_port_22 │ aws:ec2:security-group:datalake-etl-sg      │ 0.950 = 1.000 x 0.950 bridge │
-│ prowler:ec2_instance_public_ip                                   │ aws:ec2:instance:i-0a1b2c3d4e5f67890        │ 1.000                        │
-│ prowler:ec2_instance_public_ip                                   │ aws:ec2:instance:datalake-etl               │ 0.950 = 1.000 x 0.950 bridge │
-│ trivy:CVE-2021-44228                                             │ aws:ec2:instance:datalake-etl               │ 0.500                        │
-│ trivy:CVE-2021-44228                                             │ aws:ec2:instance:i-0a1b2c3d4e5f67890        │ 0.475 = 0.500 x 0.950 bridge │
-│ trivy:CVE-2022-42889                                             │ aws:ec2:instance:datalake-etl               │ 0.500                        │
-│ trivy:CVE-2022-42889                                             │ aws:ec2:instance:i-0a1b2c3d4e5f67890        │ 0.475 = 0.500 x 0.950 bridge │
-│ trivy:CVE-2022-3602                                              │ aws:ec2:instance:datalake-etl               │ 0.500                        │
-│ trivy:CVE-2022-3602                                              │ aws:ec2:instance:i-0a1b2c3d4e5f67890        │ 0.475 = 0.500 x 0.950 bridge │
-│ trivy:CVE-2023-38545                                             │ aws:ec2:instance:datalake-etl               │ 0.500                        │
-│ trivy:CVE-2023-38545                                             │ aws:ec2:instance:i-0a1b2c3d4e5f67890        │ 0.475 = 0.500 x 0.950 bridge │
-│ trivy:AVD-AWS-0028                                               │ aws:s3:bucket:datalake-raw                  │ 1.000                        │
-│ trivy:AVD-AWS-0107                                               │ aws:ec2:security-group:datalake-etl-sg      │ 0.400                        │
-│ trivy:AVD-AWS-0107                                               │ aws:ec2:security-group:sg-0f9e8d7c6b5a43210 │ 0.380 = 0.400 x 0.950 bridge │
-└──────────────────────────────────────────────────────────────────┴─────────────────────────────────────────────┴──────────────────────────────┘
 ```
 
 ## Confidence, not certainty
