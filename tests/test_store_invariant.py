@@ -2,10 +2,10 @@
 
 CLAUDE.md, "Store": an ABSENT or EMPTY store produces byte-identical SARIF.
 The flag alone never leaks persistence into the artifact. A populated store
-legitimately changes output; that is ШАГ 7 (to_sarif reads
-CorrelationRun.clusters), not a violation — ШАГ 6 only reached
+legitimately changes output; that is Step 7 (to_sarif reads
+CorrelationRun.clusters), not a violation — Step 6 only reached
 CorrelationRun.clusters, and measurably left SARIF bytes untouched (see
-CLAUDE.md, "ШАГ 6: store consumer", DoD note). test_store_flag_is_output_neutral
+CLAUDE.md, "Step 6: store consumer", DoD note). test_store_flag_is_output_neutral
 tests exactly the neutral form: it points --store at a fresh, empty tmp
 directory.  test_populated_store_exposes_ghost_membership_in_sarif is the
 companion on the other side of that line: same fixture, a store the first
@@ -18,7 +18,7 @@ test_store_persists_facts replaces test_store_writes_nothing, the tripwire
 Step 1 laid for this change. Inverted in the red commit, not by the
 implementation agent, as its docstring required: the first implementation
 that persists a Fact changes it consciously.
-test_store_persists_facts is widened again for payload v1 in the ШАГ 6 red
+test_store_persists_facts is widened again for payload v1 in the Step 6 red
 commit — same rule, same reason: the first implementation that writes the new
 payload changes this assertion consciously, not the implementation agent.
 """
@@ -46,7 +46,7 @@ EXPECTED_KEYS = {
         "aws:ec2:security-group:sg-0f9e8d7c6b5a43210",
     ),
 }
-# payload v1 (CLAUDE.md, "### ШАГ 6: store consumer"). Fact.payload is
+# payload v1 (CLAUDE.md, "### Step 6: store consumer"). Fact.payload is
 # Mapping[str, str], so endpoints are flat prefixed keys, never nested.
 EXPECTED_PAYLOAD_KEYS = {
     "payload_v",
@@ -143,7 +143,7 @@ def test_store_persists_facts(tmp_path: Path) -> None:
 
 
 def test_populated_store_exposes_ghost_membership_in_sarif(tmp_path: Path) -> None:
-    """CLAUDE.md ШАГ 7: a populated store legitimately changes SARIF bytes.
+    """CLAUDE.md Step 7: a populated store legitimately changes SARIF bytes.
 
     Run 1 (full fixture) persists Prowler's observed_together facts. Run 2
     reads that history back over a fixture copy missing prowler.json, so the

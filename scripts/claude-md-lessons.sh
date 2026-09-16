@@ -29,7 +29,7 @@ BLOCK = """
   working-copy invariant and is false in CI; it needs skipif(CI) with the reason in the
   skip text. Package invariants (entrypoint, no tests outside tests/) hold everywhere.
 - tooling: pasting a multi-line block into the editor dropped a newline or a character
-  five times in one session (### ШАГ 6 heading, a Backlog bullet, justfile `show:`,
+  five times in one session (### Step 6 heading, a Backlog bullet, justfile `show:`,
   `def` where `@` belonged). Re-parse right after every multi-line edit: `just --list`
   for the justfile, `python3 -c "import ast; ast.parse(...)"` for Python, precheck greps
   for docs.
@@ -37,7 +37,7 @@ BLOCK = """
   green run. test_documented_names_exist_in_source was green until an `IdentityBridge`
   probe appended to README made it fail.
 - tooling: guard-claude-md reads ALLOW_CLAUDE_MD_DELETE, not ..._DELETIONS as an earlier
-  Backlog line says; ШАГ 4 used a blanket --no-verify when the scoped bypass existed.
+  Backlog line says; Step 4 used a blanket --no-verify when the scoped bypass existed.
 - security: gitleaks runs only in CI (ci.yml:47). The local .pre-commit-config.yaml that
   declared it was never executed — core.hooksPath points at .githooks — and is deleted.
   A --no-verify commit therefore cannot skip the secret scan. Intentional.

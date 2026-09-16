@@ -65,13 +65,13 @@ def _rule(finding: Finding) -> dict:
 
 
 def _cluster_properties(finding: Finding, run: CorrelationRun) -> dict[str, list[str]]:
-    """Cluster/ghost membership for a finding's resources (CLAUDE.md, "ШАГ 7").
+    """Cluster/ghost membership for a finding's resources (CLAUDE.md, "Step 7").
 
     A finding's resolutions (not resource_ids: MatchKey.__str__ is not
-    parseable back, CLAUDE.md "ШАГ 6") may land in more than one cluster —
+    parseable back, CLAUDE.md "Step 6") may land in more than one cluster —
     members is the union across all of them. A ghost is a cluster member
     absent from this run's own `resources`, i.e. reachable only through a
-    bridge fact replayed from history (ШАГ 6), never from this run's ingest.
+    bridge fact replayed from history (Step 6), never from this run's ingest.
     Returns {} when the finding touches no cluster at all — to_sarif emits
     no empty lists.
     """

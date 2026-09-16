@@ -199,7 +199,7 @@ def test_results_sorted_by_resource_id_within_same_rule() -> None:
     assert resource_ids == sorted(resource_ids)
 
 
-# --- cluster / ghost membership (CLAUDE.md, "ШАГ 7") --------------------------
+# --- cluster / ghost membership (CLAUDE.md, "Step 7") --------------------------
 
 
 def _bridge(a: MatchKey, b: MatchKey, confidence: float = 0.95) -> BridgeFact:
@@ -255,7 +255,7 @@ def test_ghost_members_omitted_when_all_members_are_this_runs_own() -> None:
 
 
 def test_ghost_members_present_for_key_absent_from_this_runs_resources() -> None:
-    """CLAUDE.md, "ШАГ 6": a ghost is a MatchKey present only in history --
+    """CLAUDE.md, "Step 6": a ghost is a MatchKey present only in history --
     here modelled as a bridge fact endpoint that never got its own Resource
     entry, exactly what a key replayed from the store but absent from this
     run's ingest looks like."""

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # One-shot, fail-closed. Preconditions + anchored insert + postconditions.
 # Invoke: bash scripts/claude-md-step6.sh
+# SPENT 2026-09-16: one-shot Step 6 edit, already applied. Anchors intentionally
+# keep the pre-rename 'ШАГ' form; do not re-run.
 set -euo pipefail
 trap 'echo "ABORTED near line $LINENO (exit $?)" >&2' ERR
 

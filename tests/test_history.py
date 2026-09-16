@@ -1,6 +1,6 @@
-"""ШАГ 6: store consumer. Asserts live on CorrelationRun.clusters, never on
+"""Step 6: store consumer. Asserts live on CorrelationRun.clusters, never on
 SARIF bytes — to_sarif reads no cluster state (measured 2026-09-13); exposure
-is ШАГ 7."""
+is Step 7."""
 
 from __future__ import annotations
 

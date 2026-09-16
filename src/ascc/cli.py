@@ -38,12 +38,12 @@ def _to_fact(bf: BridgeFact, *, observed_at: datetime) -> Fact:
     already orders left/right the same way, so within one version this sort is
     redundant — but the persisted key is a durable on-disk format and must not
     inherit an in-memory invariant that could change later (see CLAUDE.md,
-    "ШАГ 5: CLI wiring + producer").
+    "Step 5: CLI wiring + producer").
 
-    payload_v 1 (ШАГ 6): each side's four MatchKey fields, flat-prefixed
+    payload_v 1 (Step 6): each side's four MatchKey fields, flat-prefixed
     `{side}.{field}`, so a consumer (ascc.correlate.history) can reconstruct
     MatchKey(*fields) without ever parsing str(MatchKey) — see CLAUDE.md,
-    "ШАГ 6: store consumer". getattr defaults to "" for a side that is not a
+    "Step 6: store consumer". getattr defaults to "" for a side that is not a
     real MatchKey: test_cli_store.py exercises this mapper's sort behaviour
     with a stand-in carrying only __str__, and a real BridgeFact's sides
     always have all four fields.
@@ -69,7 +69,7 @@ def _now() -> datetime:
     """`ASCC_NOW` (RFC3339) overrides the clock when set; otherwise the real
     clock. Required for reproducible history fixtures: observed_together's
     7-day TTL would expire a committed fixture with no code change (see
-    CLAUDE.md, "ШАГ 6: store consumer")."""
+    CLAUDE.md, "Step 6: store consumer")."""
     raw = os.environ.get("ASCC_NOW")
     if raw is not None:
         return datetime.fromisoformat(raw)
@@ -146,7 +146,7 @@ def correlate(
 
     now = _now()
 
-    # ШАГ 6: read → correlate → write. `repo` is created here (not inside the
+    # Step 6: read → correlate → write. `repo` is created here (not inside the
     # persist block below) so the same instance and the same `now` serve both
     # the read and the write side of one run.
     repo: JsonlFactRepository | None = None
@@ -158,7 +158,7 @@ def correlate(
         except OSError as exc:
             # An unreadable store degrades to no history rather than aborting
             # the run — the write block below hits the same path and is where
-            # a --store failure is actually surfaced (see CLAUDE.md, "ШАГ 5:
+            # a --store failure is actually surfaced (see CLAUDE.md, "Step 5:
             # CLI wiring + producer").
             typer.echo(f"Store unreadable, continuing without history: {exc}", err=True)
             historical = []

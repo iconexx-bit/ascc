@@ -85,7 +85,7 @@ def test_stable_across_input_order(tmp_path: Path) -> None:
 
 
 def test_stable_across_hash_seeds_with_populated_store(tmp_path: Path) -> None:
-    """CLAUDE.md ШАГ 7: properties.cluster_members / ghost_members are built
+    """CLAUDE.md Step 7: properties.cluster_members / ghost_members are built
     from a set of MatchKeys (run.clusters) and read back through a JSONL
     file — both hash-seed-dependent iteration orders. Sorting by content
     (str(key), not insertion or hash order) is what to_sarif relies on; this
@@ -93,7 +93,7 @@ def test_stable_across_hash_seeds_with_populated_store(tmp_path: Path) -> None:
 
     All three runs share one store, populated by the first and re-read
     (unchanged: same fixture, same facts) by the second and third — the
-    scenario ШАГ 6 history-replay actually exercises, not just an unused flag.
+    scenario Step 6 history-replay actually exercises, not just an unused flag.
     ASCC_NOW is pinned so observed_at, not just the SARIF bytes, is identical
     across runs — irrelevant to the assertion, but keeps the store itself
     reproducible rather than merely coincidentally byte-stable.

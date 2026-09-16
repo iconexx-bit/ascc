@@ -34,7 +34,7 @@ class CorrelationRun:
 
 
 def correlate(runs: Iterable[ScanRun], *, extra_facts: Iterable[BridgeFact] = ()) -> CorrelationRun:
-    """extra_facts (ШАГ 6): history rejoined from the store, appended to this
+    """extra_facts (Step 6): history rejoined from the store, appended to this
     run's own bridge facts before clustering. Keyword-only with an empty
     default so every pre-existing call site keeps working unchanged."""
     scan_runs = tuple(runs)
