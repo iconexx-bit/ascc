@@ -21,27 +21,27 @@ Skipping README.md: not valid JSON
 
 Two scanners named the same host differently. ASCC found one bridge fact:
 
-**Clusters**
+**Clusters** — two bridge facts, both `observed_together` at **0.95**:
 
-| Left | Right | Method | Confidence |
-|---|---|---|---|
-| `aws:ec2:instance:datalake-etl` | `aws:ec2:instance:i-0a1b2c3d4e5f67890` | `observed_together` | 0.95 |
-| `aws:ec2:security-group:datalake-etl-sg` | `aws:ec2:security-group:sg-0f9e8d7c6b5a43210` | `observed_together` | 0.95 |
+- `aws:ec2:instance:datalake-etl`
+  ↔ `aws:ec2:instance:i-0a1b2c3d4e5f67890`
+- `aws:ec2:security-group:datalake-etl-sg`
+  ↔ `aws:ec2:security-group:sg-0f9e8d7c6b5a43210`
 
 `observed_together` is observational, not deterministic — it earns 0.95, not 1.0, and
 it expires (7-day TTL, run-bound). The confidence describes the *bridge*, not the
 finding. What that bridge does to the findings:
 
-**Findings**
+**Findings** — the same bridge, applied in both directions:
 
-| Finding | Resource | Confidence |
-|---|---|---|
-| `prowler:ec2_instance_public_ip` | `aws:ec2:instance:i-0a1b2c3d4e5f67890` | 1.000 |
-| `prowler:ec2_instance_public_ip` | `aws:ec2:instance:datalake-etl` | 0.950 = 1.000 × 0.950 bridge |
-| `trivy:CVE-2021-44228` | `aws:ec2:instance:datalake-etl` | 0.500 |
-| `trivy:CVE-2021-44228` | `aws:ec2:instance:i-0a1b2c3d4e5f67890` | **0.475 = 0.500 × 0.950 bridge** |
+- `prowler:ec2_instance_public_ip`
+  - on `i-0a1b2c3d4e5f67890` — **1.000**
+  - on `datalake-etl` — **0.950** = 1.000 × 0.950 bridge
+- `trivy:CVE-2021-44228`
+  - on `datalake-etl` — **0.500**
+  - on `i-0a1b2c3d4e5f67890` — **0.475 = 0.500 × 0.950 bridge**
 
-<sub>Reformatted from CLI output for width — raw terminal capture in <a href="docs/showcase.txt">docs/showcase.txt</a>.</sub>
+<sub>Reformatted from CLI output — raw terminal capture in <a href="docs/showcase.txt">docs/showcase.txt</a>.</sub>
 
 Log4Shell arrived as a **0.500 claim about a filesystem**. Across one observational
 bridge it is a **0.475 claim about a publicly-reachable EC2 instance** — and the
