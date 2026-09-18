@@ -23,10 +23,10 @@ Two scanners named the same host differently. ASCC found one bridge fact:
 
 **Clusters** — two bridge facts, both `observed_together` at **0.95**:
 
-- `aws:ec2:instance:datalake-etl`
-  ↔ `aws:ec2:instance:i-0a1b2c3d4e5f67890`
-- `aws:ec2:security-group:datalake-etl-sg`
-  ↔ `aws:ec2:security-group:sg-0f9e8d7c6b5a43210`
+- **instance** — `datalake-etl` ↔ `i-0a1b2c3d4e5f67890`
+- **security-group** — `datalake-etl-sg` ↔ `sg-0f9e8d7c6b5a43210`
+
+<sub>Full keys are `aws:ec2:<type>:<name>` — raw capture in <a href="docs/showcase.txt">docs/showcase.txt</a>.</sub>
 
 `observed_together` is observational, not deterministic — it earns 0.95, not 1.0, and
 it expires (7-day TTL, run-bound). The confidence describes the *bridge*, not the
