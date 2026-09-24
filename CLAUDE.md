@@ -431,12 +431,14 @@ not into code; commit subjects in English only.
 
 2026-08-23: TOOLING FREEZE lifted at v0.1.0-rc (commit bc809806).
 2026-09-15: TOOLING FREEZE lifted at v0.1.0 (commit ffc35b6).
+2026-09-24: TOOLING FREEZE (scoped 2026-09-06, re-armed in 6f26f38) lifted — JsonlFactRepository green on the conformance suite (42 tests, tests/store/test_repository_conformance.py). Gate held: 10 src/ commits vs 1 chore(tooling) (7a1fd9b, `just demo` for the showcase) in the window, against 0:3 before it.
 New tooling ideas go to ## BACKLOG as one-liners, not code.
 Exception: CI-blocking failures only.
 rc scope (cut 2026-08-20): v0.1.0-rc ships to_sarif() + --output + determinism test.
 SARIF schema-validation and live-golden regeneration deferred to 0.1.1.
 LIFTED 2026-09-10 by its own gate (see Progress below) — the block that
 follows is kept for provenance, not as a live rule.
+LIFTED 2026-09-24 by its own gate — the block that follows is kept for provenance, not as a live rule.
 ACTIVE FREEZE (scoped, 2026-09-06): no chore(tooling) commits until
 the JsonlFactRepository conformance suite is green. Rationale: the
 previous unscoped lift was followed by three consecutive tooling
