@@ -19,9 +19,9 @@ Read 3 file(s) (checkov, prowler, trivy), skipped 1
 Skipping README.md: not valid JSON
 ```
 
-Two scanners named the same host differently. ASCC found one bridge fact:
+Two scanners named the same resources differently. ASCC found two bridge facts:
 
-**Clusters** — two bridge facts, both `observed_together` at **0.95**:
+**Clusters** — both `observed_together` at **0.95**:
 
 - **instance** — `datalake-etl` ↔ `i-0a1b2c3d4e5f67890`
 - **security-group** — `datalake-etl-sg` ↔ `sg-0f9e8d7c6b5a43210`
@@ -54,8 +54,9 @@ that produces it would have nowhere to land.
 
 - `results[]` sorted in product code by `(ruleId, resource_id, message)` — ordering is
   a feature, not a side effect of dict iteration
-- `ASCC_LLM=off` ⇒ byte-identical SARIF except `message.markdown`, enforced in CI by
-  running the pipeline twice and diffing
+- Byte-identical SARIF across `PYTHONHASHSEED` values: `tests/test_cli_determinism.py`
+  drives the CLI as a subprocess and compares raw output bytes in CI; input files are
+  read in sorted order
 - Golden baseline lives in `tests/data/`; the normalizer is test-only, because product
   code sorts its own output
 - No wall-clock field reaches the export. `ASCC_NOW` overrides the clock so time-
@@ -66,7 +67,8 @@ that produces it would have nowhere to land.
 ## What the SARIF carries
 
 One result per (rule, resource) — 16 for the reference fixture — deduplicated,
-deterministically ordered, valid against SARIF 2.1.0.
+deterministically ordered, valid against the official SARIF 2.1.0 schema — checked in
+CI for both the golden baseline and a live run (`tests/test_sarif_schema.py`).
 
 - resource identity in `logicalLocations.fullyQualifiedName`
   (`aws:ec2:instance:i-0a1b2c3d4e5f67890`)
@@ -77,27 +79,22 @@ deterministically ordered, valid against SARIF 2.1.0.
 
 Findings here are resource-centric, not file-centric: there is no `physicalLocation`,
 so viewers that key on source files will index them but not render them inline.
-Multiplied confidence is deliberately CLI-only in v0.1.0-rc; carrying it into
-`properties` is scoped for v0.1.1.
+Multiplied confidence is deliberately CLI-only for now; carrying it into
+`properties` is planned.
 
 ## Inventory
 
 The pre-bridge view — what each scanner reported on its own terms, before identity
 resolution ran:
 
-```
-                                                            Resources
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Key                                         ┃ Refs ┃ Scanners                ┃ Tags                                           ┃
-┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ aws:s3:bucket:datalake-raw                  │ 7    │ checkov, prowler, trivy │ DataClassification=PII, Environment=production │
-│ aws:iam:role:datalake-etl-role              │ 2    │ checkov, prowler        │ Environment=production                         │
-│ aws:ec2:security-group:sg-0f9e8d7c6b5a43210 │ 1    │ prowler                 │ Environment=production                         │
-│ aws:ec2:instance:i-0a1b2c3d4e5f67890        │ 1    │ prowler                 │ Environment=production, Role=etl               │
-│ aws:ec2:instance:datalake-etl               │ 4    │ trivy                   │                                                │
-│ aws:ec2:security-group:datalake-etl-sg      │ 1    │ trivy                   │                                                │
-└─────────────────────────────────────────────┴──────┴─────────────────────────┴────────────────────────────────────────────────┘
-```
+- `aws:s3:bucket:datalake-raw` — 7 refs · checkov, prowler, trivy · `DataClassification=PII`, `Environment=production`
+- `aws:iam:role:datalake-etl-role` — 2 refs · checkov, prowler · `Environment=production`
+- `aws:ec2:security-group:sg-0f9e8d7c6b5a43210` — 1 ref · prowler · `Environment=production`
+- `aws:ec2:instance:i-0a1b2c3d4e5f67890` — 1 ref · prowler · `Environment=production`, `Role=etl`
+- `aws:ec2:instance:datalake-etl` — 4 refs · trivy · no tags
+- `aws:ec2:security-group:datalake-etl-sg` — 1 ref · trivy · no tags
+
+<sub>Reformatted from CLI output — raw capture in <a href="docs/showcase.txt">docs/showcase.txt</a>.</sub>
 
 ## Confidence, not certainty
 
@@ -122,8 +119,8 @@ Effective confidence for a claim that crosses a bridge is the product of its res
 
 ## Architecture
 ```
-schema (shared vocabulary) + store (persistence, post-v0.1)
-ingest -> correlate -> score -> [export]
+schema (shared vocabulary) + store (cross-run facts, JSONL)
+ingest -> correlate -> [export]
 ```
 - Resource-centric normalized schema — the resource is primary,
   findings attach to it (many-to-many)
@@ -131,6 +128,8 @@ ingest -> correlate -> score -> [export]
   nothing about Trivy, Prowler, or Checkov
 
 **Planned**
+- A `score` stage between correlate and export: deterministic risk score and MITRE
+  ATT&CK mapping
 - PostgreSQL + pgvector will eventually be used for storage and semantic
   correlation
 - SARIF is intended as an export-only target (CI/CD and IDE
@@ -142,19 +141,20 @@ ingest -> correlate -> score -> [export]
 |---|---|
 | `schema/` | Identity resolution with provenance (`MatchKey`, `resolve()`), cluster bridging (`BridgeFact`, `ResourceCluster`) |
 | `ingest/` | Trivy, Prowler, Checkov parsers behind a common `ScannerParser` interface, plus a `sniff()`-based registry dispatcher |
-| `store/` | not started (JSONL first, PostgreSQL + pgvector later) |
+| `store/` | `FactRepository` with in-memory and JSONL backends; TTL marks facts stale, never deletes; `--store PATH` adds cross-run cluster and ghost membership to SARIF |
 | `correlate/` | `build_clusters()` → `ResourceCluster` (Union-Find clustering, `bridge.py`) + `CorrelationRun` (tag-conflict resolution, `effective_confidence()`, `run.py`) |
 | `export/` | `to_sarif()` — SARIF 2.1.0, deterministic result ordering, `--output PATH` with atomic write |
 
-17 test modules; CI runs lint, format check, tests, and a determinism
-matrix, plus a separate `secrets-scan` job (gitleaks); pre-commit hooks
-(`.pre-commit-config.yaml`) run ruff and gitleaks locally.
+CI runs lint, format check and tests (including byte-level determinism and SARIF
+schema validation), plus a separate `secrets-scan` job (gitleaks). Locally, the git hook
+in `.githooks/pre-commit` checks lock and venv drift and runs ruff; gitleaks runs only in CI.
 
 ## Roadmap
 
-- `v0.1.1`: validation against the official SARIF 2.1.0 JSON schema;
-  live golden regeneration from CLI output
-- `store/`: JSONL first, then PostgreSQL + pgvector behind `FactRepository`
+- `v0.1.1`: store format-version check on load; durable directory fsync
+- Resource graph and attack-chain detection, exported in SARIF `properties`
+- Deterministic risk score with MITRE ATT&CK mapping
+- PostgreSQL backend behind `FactRepository`
 
 ## Installation
 
