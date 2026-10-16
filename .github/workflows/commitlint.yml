@@ -3,6 +3,9 @@ name: Commit Lint
 on:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   commitlint:
     runs-on: ubuntu-latest
@@ -12,20 +15,30 @@ jobs:
           fetch-depth: 0
 
       - name: Validate commit messages
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          VALID_TYPES="feat|fix|docs|style|refactor|perf|test|chore|ci|security"
-          VALID_SCOPES="parser|graph|identity-resolution|scorer|retrieval|diff|merge|cli"
-          PATTERN="^($VALID_TYPES)(\($VALID_SCOPES\))?: .{1,50}$"
+          # Conventional Commits header: type(scope)!: subject.
+          # Scope is free-form kebab-case: the fixed scope list went stale and
+          # rejected 117 of 153 commits on main. 100 = @commitlint/config-conventional.
+          VALID_TYPES="feat|fix|docs|style|refactor|perf|test|build|chore|ci|security"
+          PATTERN="^($VALID_TYPES)(\([a-z0-9][a-z0-9-]*\))?!?: [^ ].*$"
+          MAX_HEADER=100
 
+          # The PR's own commits only. HEAD here is the synthetic merge commit
+          # GitHub builds for pull_request events; origin/main..HEAD included it.
           FAILED=0
-          for commit in $(git rev-list origin/main..HEAD); do
-            SUBJECT=$(git log --format=%B -n 1 $commit | head -n 1)
-            if ! echo "$SUBJECT" | grep -qE "$PATTERN"; then
+          for commit in $(git rev-list --no-merges "$BASE_SHA..$HEAD_SHA"); do
+            SUBJECT=$(git log --format=%s -n 1 "$commit")
+            if ! printf '%s\n' "$SUBJECT" | grep -qE "$PATTERN" || [ "${#SUBJECT}" -gt "$MAX_HEADER" ]; then
               echo "❌ Invalid: $SUBJECT"
-              echo "   Format: <type>(<scope>): <message>"
-              echo "   Types: $VALID_TYPES"
-              echo "   Scopes: $VALID_SCOPES"
               FAILED=1
             fi
           done
-          [ $FAILED -eq 0 ] && echo "✅ All commits valid" || exit 1
+          if [ "$FAILED" -ne 0 ]; then
+            echo "   Format: <type>(<scope>): <subject>, header <= $MAX_HEADER chars"
+            echo "   Types: $VALID_TYPES"
+            exit 1
+          fi
+          echo "✅ All commits valid"
