@@ -146,8 +146,8 @@ ingest -> correlate -> [export]
 | `export/` | `to_sarif()` — SARIF 2.1.0, deterministic result ordering, `--output PATH` with atomic write |
 
 CI runs lint, format check and tests (including byte-level determinism and SARIF
-schema validation), plus a separate `secrets-scan` job (gitleaks); pre-commit hooks
-(`.pre-commit-config.yaml`) run ruff and gitleaks locally.
+schema validation), plus a separate `secrets-scan` job (gitleaks). Locally, the git hook
+in `.githooks/pre-commit` checks lock and venv drift and runs ruff; gitleaks runs only in CI.
 
 ## Roadmap
 

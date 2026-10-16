@@ -378,8 +378,8 @@ against --numstat column 2.
 - security: gitleaks runs only in CI (ci.yml:47). The local .pre-commit-config.yaml that
   declared it was never executed — core.hooksPath points at .githooks — and is deleted.
   A --no-verify commit therefore cannot skip the secret scan. Intentional.
-- deps: `pre-commit` is still in dev extras but no hook uses it; removing it touches
-  uv.lock, so it is deferred, not forgotten.
+- deps: `pre-commit` was in dev extras with no hook using it — removed 2026-10-16 (A0);
+  it was the only path for virtualenv into uv.lock.
 - from_history flag on replayed store facts — replaces the run.resources proxy for ghost detection.
 - Detection pack: journald decoder for tags `dnsmasq` / `range-idp`, then Sigma
   rules 100200-100299 (7 rules, matching SIGMA_EXPECTED). Verified by
@@ -415,9 +415,9 @@ pulls the next ceiling forward. Nothing above the tag starts before the tag.
        DoD: two runs sharing one store produce byte-identical SARIF.
 3. [x] `just demo` recipe.
        DoD: one command runs twice, diffs, prints the ghost node. ASCC_NOW pinned.
-4. [ ] CHANGELOG backfill for v0.1.0-rc..main (Added/Fixed only).
+4. [x] CHANGELOG backfill for v0.1.0-rc..main (Added/Fixed only). Closed 2026-09-15 (9f47fc0).
        DoD: no feat/fix commit since the rc is unaccounted for.
-5. [ ] Tag v0.1.0 (signed) + GitHub Release; rc marked prerelease.
+5. [x] Tag v0.1.0 (signed) + GitHub Release; rc marked prerelease. Closed 2026-09-15 (tag on ffc35b6).
        DoD: `gh release list` shows two entries.
 
 After the tag (unordered): asciinema + README metric; Wazuh blog post;
@@ -425,6 +425,9 @@ ascc-extras rerank (gate MRR > 0.8662); guards/ vendoring; K8s IRSA go/no-go.
 
 Ceilings: Step 7 <= 2026-09-27; v0.1.0 <= 2026-10-04; blog <= 2026-10-11.
 Update 2026-09-15: Step 7 and v0.1.0 closed ahead of their ceilings; blog ceiling unchanged.
+Update 2026-10-15: blog ceiling 2026-10-11 missed (time went to homelab hardening).
+The live queue (A0-A4: public truth, v0.1.1, graph + chains, showcase, scoring) is
+kept in the project runbook; this section is history from here on.
 Session rules: never leave a red test overnight; close every session with one
 status line (items closed, next item); new tooling ideas go to ## BACKLOG,
 not into code; commit subjects in English only.
@@ -468,7 +471,10 @@ while it held.
 
 ## Determinism
 
-- `ASCC_LLM=off` ⇒ byte-identical SARIF except message.markdown fields (CI-enforced).
+- `ASCC_LLM=off` ⇒ byte-identical SARIF except message.markdown fields. Planned
+  invariant: no LLM code exists yet; it becomes a CI gate together with the AI layer.
+- SARIF output validates against the official 2.1.0 schema, golden and live run
+  (tests/test_sarif_schema.py).
 - results[] sorted in product code by (ruleId, resource_id, message).
 
 ## Scoring
