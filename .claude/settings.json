@@ -43,7 +43,6 @@
       "Bash(pip install:*)",
       "Bash(curl:*)",
       "Bash(wget:*)",
-      "Read(./.git/**)",
       "Edit(./.git/**)",
       "Bash(git config:*)"
     ]
