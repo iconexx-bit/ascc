@@ -1,0 +1,17 @@
+# Version updates for workflow actions (A1, 2026-10-25). The actions are pinned
+# to commit SHAs (tests/test_env_invariants.py); Dependabot bumps the SHA and the
+# version comment. `ci(deps): ...` headers pass the Commit Lint gate, the default
+# `Bump ...` would not. Python dependencies are not covered here yet.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    groups:
+      actions:
+        patterns:
+          - "*"
