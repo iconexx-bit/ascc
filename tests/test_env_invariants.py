@@ -218,3 +218,43 @@ def test_workflows_declare_least_privilege_token():
             if m and (wf.name, m.group(1)) not in ALLOWED_WRITE:
                 bad.append(f"{wf.name}:{n} {m.group(1)}: write")
     assert not bad, f"workflow token permissions: {bad}"
+
+
+def _setup_uv_inputs():
+    """(workflow, line, key) for each `with:` key of each astral-sh/setup-uv step."""
+    found = []
+    for wf in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
+        lines = wf.read_text(encoding="utf-8").splitlines()
+        for n, ln in enumerate(lines):
+            if "astral-sh/setup-uv@" not in ln.split("#", 1)[0]:
+                continue
+            found.append((wf.name, n + 1, "uses"))
+            indent = len(ln) - len(ln.lstrip(" -"))
+            for m, nxt in enumerate(lines[n + 1 :], n + 2):
+                code = nxt.split("#", 1)[0].rstrip()
+                if not code:
+                    continue
+                if len(code) - len(code.lstrip()) < indent or code.lstrip().startswith("- "):
+                    break
+                key = re.match(r"\s*([a-z-]+):", code)
+                if key:
+                    found.append((wf.name, m, key.group(1)))
+    return found
+
+
+def test_uv_version_pinned_once_in_pyproject():
+    """One uv version for the VM and CI: `[tool.uv] required-version` is an exact
+    pin (uv refuses to run under any other version); setup-uv takes it from
+    pyproject.toml because no step sets `version`/`version-file`; the README names
+    the same version (A1, 2026-10-25)."""
+    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    pin = pyproject.get("tool", {}).get("uv", {}).get("required-version")
+    assert isinstance(pin, str) and re.fullmatch(r"==\d+\.\d+\.\d+", pin), (
+        f"[tool.uv] required-version must be an exact ==X.Y.Z pin, got {pin!r}"
+    )
+    inputs = _setup_uv_inputs()
+    assert inputs, "no astral-sh/setup-uv step found"
+    bad = [i for i in inputs if i[2] in ("version", "version-file")]
+    assert not bad, f"setup-uv must read the pin from pyproject.toml: {bad}"
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert f"uv {pin[2:]}" in readme, f"README does not name uv {pin[2:]}"
