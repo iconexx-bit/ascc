@@ -31,13 +31,15 @@ jobs:
         language: [ 'python' ]
 
     steps:
-      # 1. Безопасный Checkout со строгой фиксацией по SHA-1 коммита (v4.1.7)
+      # 1. Checkout, закреплён по SHA коммита (версия — в комментарии строки uses: его обновляет Dependabot)
       - name: Checkout Repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      # 2. Инициализация CodeQL с фиксацией по SHA-1 (v3.25.11)
+      # 2. Инициализация CodeQL, закреплена по SHA коммита
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370
+        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           languages: ${{ matrix.language }}
           # Расширенный набор правил безопасности (включая качество кода и известные CWE)
@@ -46,10 +48,10 @@ jobs:
       # 3. Автоматическая сборка (если язык компилируемый, например Java/C++/Go).
       # Для скриптовых языков (Python/JS) этот шаг можно пропустить.
       - name: Autobuild Project
-        uses: github/codeql-action/autobuild@9b3254085494b55a0f7c4c2b3d2d52cc712ce370
+        uses: github/codeql-action/autobuild@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
 
       # 4. Выполнение анализа и публикация SARIF-отчета
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370
+        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           category: "/language:${{ matrix.language }}"
