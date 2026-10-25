@@ -195,3 +195,26 @@ def test_pinned_actions_carry_version_comment():
             if not re.search(r"#\s*v\d+(\.\d+)*\s*$", m.group(2)):
                 bad.append(f"{wf.name}:{n} {m.group(1)}")
     assert not bad, f"pinned actions without a trailing version comment: {bad}"
+
+
+# Write scopes a workflow may grant, by file and scope: CodeQL uploads SARIF.
+ALLOWED_WRITE = {("codeql-analysis.yml", "security-events")}
+
+
+def test_workflows_declare_least_privilege_token():
+    """Every workflow sets top-level `permissions:` (no reliance on the repository
+    default for GITHUB_TOKEN), never `write-all`/`read-all`, and grants `write`
+    only where listed in ALLOWED_WRITE (A1, 2026-10-25)."""
+    bad = []
+    for wf in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
+        lines = wf.read_text(encoding="utf-8").splitlines()
+        if not any(re.match(r"permissions:", ln) for ln in lines):
+            bad.append(f"{wf.name}: no top-level permissions")
+        for n, ln in enumerate(lines, 1):
+            code = ln.split("#", 1)[0]
+            if re.search(r"\b(write|read)-all\b", code):
+                bad.append(f"{wf.name}:{n} {code.strip()}")
+            m = re.match(r"\s*([a-z-]+):\s*write\s*$", code)
+            if m and (wf.name, m.group(1)) not in ALLOWED_WRITE:
+                bad.append(f"{wf.name}:{n} {m.group(1)}: write")
+    assert not bad, f"workflow token permissions: {bad}"
