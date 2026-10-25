@@ -6,6 +6,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tomllib
 
 import pytest
 
@@ -61,3 +62,54 @@ def test_hooks_path_is_configured():
         check=False,
     )
     assert out.stdout.strip() == ".githooks", "just init-hooks не выполнен"
+
+
+def test_dev_tools_are_a_dependency_group():
+    """Dev tools live in the PEP 735 group `dev`, which `uv sync` and `uv run`
+    install by default. As the extra `dev` they were removed by a plain
+    `uv sync`, and `uv run pytest` fell through to /usr/bin/pytest 7.4.4
+    while `uv run ruff` failed to spawn (A1, 2026-10-24)."""
+    data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    extras = data["project"].get("optional-dependencies", {})
+    assert "dev" not in extras, "dev tools are a published extra, not a dependency group"
+    group = data.get("dependency-groups", {}).get("dev", [])
+    names = {re.split(r"[<>=!~;\[ ]", req, maxsplit=1)[0] for req in group}
+    assert {"pytest", "ruff"} <= names, f"dependency-groups.dev lacks pytest/ruff: {sorted(names)}"
+
+
+def test_no_extra_dev_in_entrypoints():
+    """Every documented or automated sync installs the default group, so no
+    entry point builds a different tool set than `uv run` syncs against."""
+    paths = [
+        ROOT / "justfile",
+        ROOT / "README.md",
+        *sorted((ROOT / ".github" / "workflows").glob("*.yml")),
+    ]
+    bad = [
+        f"{p.relative_to(ROOT)}:{n}"
+        for p in paths
+        for n, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1)
+        if re.search(r"--extra[ =]dev\b", line)
+    ]
+    assert not bad, f"--extra dev still used: {bad}"
+
+
+def test_running_in_project_environment():
+    """The interpreter running the tests is the project environment, not the
+    system one a missing dev tool would fall through to."""
+    env = os.environ.get("UV_PROJECT_ENVIRONMENT")
+    expected = (ROOT / env if env else ROOT / ".venv").resolve()
+    assert pathlib.Path(sys.prefix).resolve() == expected, (
+        f"tests run outside the project environment: {sys.prefix} != {expected}"
+    )
+
+
+@pytest.mark.parametrize("tool", ["pytest", "ruff"])
+def test_dev_tool_inside_prefix(tool):
+    """`uv run <tool>` resolves through PATH: a tool missing from the project
+    environment silently becomes the system one."""
+    path = shutil.which(tool)
+    assert path is not None, f"{tool} не найден"
+    assert pathlib.Path(path).resolve().is_relative_to(pathlib.Path(sys.prefix).resolve()), (
+        f"{tool} вне окружения проекта: {path}"
+    )
