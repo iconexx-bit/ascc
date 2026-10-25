@@ -161,7 +161,7 @@ in `.githooks/pre-commit` checks lock and venv drift and runs ruff; gitleaks run
 ```bash
 git clone https://github.com/iconexx-bit/ascc.git
 cd ascc
-uv sync --extra dev
+uv sync    # installs the default dependency group `dev` (pytest, ruff)
 
 # Per-clone git config — git does not transfer local settings:
 git config commit.template .gitmessage    # Conventional Commits template

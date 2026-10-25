@@ -286,6 +286,7 @@ would throw away the finding.
 - deny-pattern "Edit(./fixtures/**)" in .claude/settings.json not anchored to root, incidentally blocks tests/fixtures/ too — audit/anchor post-rc
 - audit stray pip/uv installs bypassing lockfile — venv drifted to 66 extra packages (llama-index stack) outside uv.lock on 18.08, caught by deps-check pre-commit hook before merge
 - deps: pyproject had two parallel dev mechanisms (optional-dependencies + dependency-groups); consolidated to extras. `pre-commit` (4.6.2) is installed but unused — core.hooksPath points at .githooks and no hook invokes it; removing it touches uv.lock, so it is deferred. Evaluate PEP 735 migration post-rc.
+- deps: ✔ 2026-10-24 (A1) PEP 735 migration done — dev tools moved from the extra `dev` to `[dependency-groups] dev` (installed by default by `uv sync`/`uv run`); `--extra dev` removed from justfile, CI and README. Reason: a plain `uv sync` stripped the extra, then `uv run pytest` ran /usr/bin/pytest 7.4.4 and `uv run ruff` failed to spawn. Gate: tests/test_env_invariants.py (group, no `--extra dev`, project environment, tools inside prefix).
 - docs: delegation-log table delimiter row violates MD060; align when markdownlint lands in CI
 - docs: add docs/prompts/working-agreement.md (workflow contract + operating rules); mirror to userPreferences
 - docs: code for the editor is given bare, never wrapped in a shell heredoc; long terminal output goes through a file

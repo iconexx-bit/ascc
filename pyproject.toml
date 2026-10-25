@@ -11,7 +11,14 @@ dependencies = [
     "rich>=13.7",
 ]
 
-[project.optional-dependencies]
+[project.scripts]
+ascc = "ascc.cli:app"
+
+# Dev tools are a PEP 735 group, not a published extra: `uv sync` and
+# `uv run` install the default group `dev`, so a plain sync no longer strips
+# pytest/ruff and leaves `uv run` falling through to system binaries
+# (A1, 2026-10-24: /usr/bin/pytest 7.4.4 ran, ruff failed to spawn).
+[dependency-groups]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
@@ -20,14 +27,12 @@ dev = [
     "jsonschema>=4.26.0",
 ]
 
-[project.scripts]
-ascc = "ascc.cli:app"
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
+testpaths = ["tests"]
 markers = [
     "env: environment invariants (gate for all other tests)",
 ]

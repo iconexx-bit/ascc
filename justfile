@@ -6,7 +6,7 @@ default: lint test
 # Проверка лока и синхронности окружения (не мутирует)
 deps-check:
     uv lock --check
-    uv sync --check --locked --extra dev
+    uv sync --check --locked
 
 # Форматирование и статический анализ
 lint:
@@ -25,9 +25,9 @@ test: test-env
 show:
     just --dump
 
-# Привести .venv в соответствие с lock (МУТИРУЕТ окружение)
+# Привести .venv в соответствие с lock (МУТИРУЕТ окружение); группа dev ставится по умолчанию
 sync:
-    uv sync --locked --extra dev
+    uv sync --locked
 
 # warn on CLAUDE.md line removals; authority lives in tests/test_claude_md_contracts.py
 guard-claude-md:
