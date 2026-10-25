@@ -158,6 +158,10 @@ in `.githooks/pre-commit` checks lock and venv drift and runs ruff; gitleaks run
 
 ## Installation
 
+Requires uv 0.13.5: the version is pinned in `pyproject.toml`
+(`[tool.uv] required-version`) and uv refuses to run under any other one
+(`uv self update 0.13.5`).
+
 ```bash
 git clone https://github.com/iconexx-bit/ascc.git
 cd ascc
