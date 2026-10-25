@@ -3,7 +3,7 @@
 [![CI](https://github.com/iconexx-bit/ascc/actions/workflows/ci.yml/badge.svg)](https://github.com/iconexx-bit/ascc/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/iconexx-bit/ascc/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/iconexx-bit/ascc/actions/workflows/codeql-analysis.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.11 | 3.12](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](https://github.com/iconexx-bit/ascc/actions/workflows/ci.yml)
 
 ASCC is a correlation and reasoning layer over cloud infrastructure security tooling — it never talks to a cloud API itself, and every fact it works with already came from Trivy, Prowler, or Checkov.
 

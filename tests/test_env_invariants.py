@@ -258,3 +258,42 @@ def test_uv_version_pinned_once_in_pyproject():
     assert not bad, f"setup-uv must read the pin from pyproject.toml: {bad}"
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert f"uv {pin[2:]}" in readme, f"README does not name uv {pin[2:]}"
+
+
+def test_ci_matrix_covers_supported_pythons():
+    """requires-python's floor is tested, not promised: the CI test job runs a
+    quoted python-version matrix starting at that floor, hands each leg to
+    setup-uv (which exports UV_PYTHON), and the README badge names the same
+    versions (A1, 2026-10-25)."""
+    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    floor = re.fullmatch(r">=\s*3\.(\d+)", pyproject["project"]["requires-python"])
+    assert floor, f"unexpected requires-python: {pyproject['project']['requires-python']!r}"
+    ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    m = re.search(r"^\s*python-version:\s*\[([^\]]*)\]", ci, re.MULTILINE)
+    assert m, "ci.yml: no python-version matrix"
+    minors = sorted(int(v) for v in re.findall(r'"3\.(\d+)"', m.group(1)))
+    assert minors and minors[0] == int(floor.group(1)), (
+        f"matrix {m.group(1)!r} must start at 3.{floor.group(1)} (quoted: YAML reads 3.10 as 3.1)"
+    )
+    assert re.search(r"python-version:\s*\$\{\{\s*matrix\.python-version\s*\}\}", ci), (
+        "setup-uv does not receive matrix.python-version"
+    )
+    assert ("ci.yml", "python-version") in {(i[0], i[2]) for i in _setup_uv_inputs()}, (
+        "matrix.python-version is not an input of the setup-uv step"
+    )
+    badge = "python-" + "%20%7C%20".join(f"3.{v}" for v in minors)
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert badge in readme, f"README badge does not name the tested versions ({badge})"
+
+
+def test_interpreter_matches_requested_python():
+    """Each CI matrix leg really runs its interpreter: setup-uv exports UV_PYTHON
+    and the tests must execute under that minor version (A1, 2026-10-25)."""
+    want = os.environ.get("UV_PYTHON")
+    if not want:
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            pytest.fail("UV_PYTHON is not set in CI: the matrix leg never reached the tests")
+        pytest.skip("UV_PYTHON is not set (local run)")
+    assert re.fullmatch(r"3\.\d+", want), f"UV_PYTHON must be a minor version, got {want!r}"
+    got = f"{sys.version_info.major}.{sys.version_info.minor}"
+    assert got == want, f"tests run on Python {got}, UV_PYTHON asks for {want}"
