@@ -147,3 +147,51 @@ def test_dependabot_updates_pinned_actions():
     assert re.search(r"^\s+include:\s*[\"']?scope[\"']?\s*$", text, re.MULTILINE), (
         "dependabot commit messages lack the (deps) scope"
     )
+
+
+def _checkout_steps():
+    """Yield (workflow, line, step lines) for every actions/checkout step."""
+    for wf in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
+        lines = wf.read_text(encoding="utf-8").splitlines()
+        for i, line in enumerate(lines):
+            if not re.match(r"\s*(?:-\s+)?uses:\s*actions/checkout@", line):
+                continue
+            start = i
+            while start > 0 and not re.match(r"\s*-\s", lines[start]):
+                start -= 1
+            dash = len(lines[start]) - len(lines[start].lstrip())
+            end = start + 1
+            while end < len(lines) and (
+                not lines[end].strip() or len(lines[end]) - len(lines[end].lstrip()) > dash
+            ):
+                end += 1
+            yield wf.name, i + 1, lines[start:end]
+
+
+def test_checkout_does_not_persist_credentials():
+    """No job pushes, so no job keeps GITHUB_TOKEN in .git after checkout: with
+    the default persist-credentials every later step (third-party actions, test
+    code) can read the token from the working copy (A1, 2026-10-25)."""
+    steps = list(_checkout_steps())
+    assert steps, "no actions/checkout steps found: the check would pass vacuously"
+    bad = [
+        f"{wf}:{n}"
+        for wf, n, block in steps
+        if not any(re.match(r"\s*persist-credentials:\s*false\s*(#.*)?$", ln) for ln in block)
+    ]
+    assert not bad, f"actions/checkout without persist-credentials: false: {bad}"
+
+
+def test_pinned_actions_carry_version_comment():
+    """A pinned SHA says nothing to a reviewer; the trailing `# vX.Y.Z` is what
+    Dependabot rewrites with the SHA. A version kept in a separate comment line
+    goes stale (codeql-analysis.yml said v4.1.7 / v3.25.11 after the bump)."""
+    bad = []
+    for wf in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
+        for n, line in enumerate(wf.read_text(encoding="utf-8").splitlines(), 1):
+            m = re.match(r"\s*(?:-\s+)?uses:\s*([^\s#]+)(.*)$", line)
+            if not m or m.group(1).startswith(("./", "docker://")):
+                continue
+            if not re.search(r"#\s*v\d+(\.\d+)*\s*$", m.group(2)):
+                bad.append(f"{wf.name}:{n} {m.group(1)}")
+    assert not bad, f"pinned actions without a trailing version comment: {bad}"
