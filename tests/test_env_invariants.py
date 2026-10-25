@@ -113,3 +113,18 @@ def test_dev_tool_inside_prefix(tool):
     assert pathlib.Path(path).resolve().is_relative_to(pathlib.Path(sys.prefix).resolve()), (
         f"{tool} вне окружения проекта: {path}"
     )
+
+
+def test_workflow_actions_pinned_by_sha():
+    """Every third-party action is pinned to a full commit SHA: a tag can be
+    moved to other code after review, a SHA cannot (A1, 2026-10-25)."""
+    bad = []
+    for wf in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
+        for n, line in enumerate(wf.read_text(encoding="utf-8").splitlines(), 1):
+            m = re.match(r"\s*(?:-\s+)?uses:\s*([^\s#]+)", line)
+            if not m or m.group(1).startswith(("./", "docker://")):
+                continue
+            ref = m.group(1).rpartition("@")[2]
+            if not re.fullmatch(r"[0-9a-f]{40}", ref):
+                bad.append(f"{wf.name}:{n} {m.group(1)}")
+    assert not bad, f"actions not pinned to a commit SHA: {bad}"
