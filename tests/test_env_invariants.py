@@ -128,3 +128,22 @@ def test_workflow_actions_pinned_by_sha():
             if not re.fullmatch(r"[0-9a-f]{40}", ref):
                 bad.append(f"{wf.name}:{n} {m.group(1)}")
     assert not bad, f"actions not pinned to a commit SHA: {bad}"
+
+
+def test_dependabot_updates_pinned_actions():
+    """Pinned actions get no fixes on their own: Dependabot bumps the SHA and its
+    version comment, with a commit header the Commit Lint gate accepts
+    (`ci(deps): ...`; its default `Bump ...` would fail every update PR)."""
+    cfg = ROOT / ".github" / "dependabot.yml"
+    assert cfg.is_file(), "no .github/dependabot.yml: pinned actions are never updated"
+    text = cfg.read_text(encoding="utf-8")
+    assert re.search(r"^version:\s*2\s*$", text, re.MULTILINE), "dependabot.yml is not version 2"
+    assert re.search(r"package-ecosystem:\s*[\"']?github-actions[\"']?\s*$", text, re.MULTILINE), (
+        "dependabot.yml does not track github-actions"
+    )
+    assert re.search(r"^\s+prefix:\s*[\"']?ci[\"']?\s*$", text, re.MULTILINE), (
+        "dependabot commit messages lack the `ci` prefix Commit Lint requires"
+    )
+    assert re.search(r"^\s+include:\s*[\"']?scope[\"']?\s*$", text, re.MULTILINE), (
+        "dependabot commit messages lack the (deps) scope"
+    )
