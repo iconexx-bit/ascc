@@ -27,6 +27,12 @@ dev = [
     "jsonschema>=4.26.0",
 ]
 
+# One uv version for the VM and CI (A1, 2026-10-25): uv refuses to run under
+# any other version, and astral-sh/setup-uv installs this one when its `version`
+# input is unset, checking the release sha256 it knows.
+[tool.uv]
+required-version = "==0.13.5"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
