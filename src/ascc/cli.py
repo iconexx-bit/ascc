@@ -12,7 +12,7 @@ from rich.table import Table
 from ascc.correlate.history import facts_to_bridge_facts
 from ascc.correlate.run import correlate as run_correlate
 from ascc.correlate.run import effective_confidence
-from ascc.export.sarif import to_sarif
+from ascc.export.sarif import graph_properties, to_sarif
 from ascc.ingest.registry import parser_for
 from ascc.schema.models import BridgeFact, ScanRun
 from ascc.store import Fact, JsonlFactRepository, StoreFormatError
@@ -283,6 +283,16 @@ def correlate(
             values = ", ".join(f"{scanner}={value}" for scanner, value in conflict.values)
             conflicts_table.add_row(str(conflict.resource_key), conflict.tag_key, values)
         console.print(conflicts_table)
+
+    chains = graph_properties(correlation_run)["chains"]
+    if chains:
+        top = chains[0]  # longest first (CLAUDE.md, "Graph and chains (A2)")
+        console.print(
+            f"Attack chains: {len(chains)} "
+            f"(longest {top['hops']} hops, confidence {top['confidence']:g})"
+        )
+    else:
+        console.print("Attack chains: 0")
 
 
 if __name__ == "__main__":

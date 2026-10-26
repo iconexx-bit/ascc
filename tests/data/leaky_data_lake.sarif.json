@@ -2,6 +2,116 @@
   "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
   "runs": [
     {
+      "properties": {
+        "chains": [
+          {
+            "confidence": 0.6,
+            "edges": [
+              {
+                "confidence": 1.0,
+                "dst": "aws:ec2:instance:i-0a1b2c3d4e5f67890",
+                "evidence": "arn:aws:ec2:us-east-1:123456789012:instance/i-0a1b2c3d4e5f67890 security_groups=sg-0f9e8d7c6b5a43210",
+                "kind": "exposes",
+                "method": "attached_security_group",
+                "properties": {},
+                "source": "prowler",
+                "src": "aws:ec2:security-group:sg-0f9e8d7c6b5a43210"
+              },
+              {
+                "confidence": 0.6,
+                "dst": "aws:iam:role:datalake-etl-role",
+                "evidence": "arn:aws:iam::123456789012:instance-profile/datalake-etl-role name=datalake-etl-role",
+                "kind": "assumes",
+                "method": "profile_role_name",
+                "properties": {},
+                "source": "prowler",
+                "src": "aws:ec2:instance:i-0a1b2c3d4e5f67890"
+              },
+              {
+                "confidence": 1.0,
+                "dst": "aws:s3:bucket:datalake-raw",
+                "evidence": "arn:aws:iam::123456789012:role/datalake-etl-role inline_policy actions=* resources=*",
+                "kind": "can_access",
+                "method": "policy_wildcard",
+                "properties": {
+                  "account_match": "same",
+                  "deny_check": "not_observed",
+                  "unobserved_layers": [
+                    "bucket_policy",
+                    "permissions_boundary",
+                    "rcp",
+                    "scp"
+                  ]
+                },
+                "source": "prowler",
+                "src": "aws:iam:role:datalake-etl-role"
+              }
+            ],
+            "hops": 3,
+            "id": "chain-c1786ed3ae49",
+            "nodes": [
+              {
+                "accounts": [
+                  "123456789012"
+                ],
+                "entry_findings": [
+                  "prowler:ec2_securitygroup_allow_ingress_from_internet_to_port_22",
+                  "trivy:AVD-AWS-0107"
+                ],
+                "key": "aws:ec2:security-group:sg-0f9e8d7c6b5a43210",
+                "members": [
+                  "aws:ec2:security-group:datalake-etl-sg",
+                  "aws:ec2:security-group:sg-0f9e8d7c6b5a43210"
+                ]
+              },
+              {
+                "accounts": [
+                  "123456789012"
+                ],
+                "entry_findings": [
+                  "prowler:ec2_instance_public_ip"
+                ],
+                "key": "aws:ec2:instance:i-0a1b2c3d4e5f67890",
+                "members": [
+                  "aws:ec2:instance:datalake-etl",
+                  "aws:ec2:instance:i-0a1b2c3d4e5f67890"
+                ]
+              },
+              {
+                "accounts": [
+                  "123456789012"
+                ],
+                "entry_findings": [],
+                "key": "aws:iam:role:datalake-etl-role",
+                "members": [
+                  "aws:iam:role:datalake-etl-role"
+                ]
+              },
+              {
+                "accounts": [
+                  "123456789012"
+                ],
+                "data_classification": "PII",
+                "entry_findings": [],
+                "key": "aws:s3:bucket:datalake-raw",
+                "members": [
+                  "aws:s3:bucket:datalake-raw"
+                ]
+              }
+            ]
+          }
+        ],
+        "graph_stats": {
+          "dropped_edges": 0,
+          "edges": 5,
+          "edges_by_kind": {
+            "assumes": 1,
+            "can_access": 3,
+            "exposes": 1
+          },
+          "nodes": 4
+        }
+      },
       "results": [
         {
           "level": "warning",

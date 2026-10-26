@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 
+from ascc.correlate.graph import TARGET_TAG, Chain, Edge, Graph, Node, build_graph, find_chains
 from ascc.correlate.run import CorrelationRun
 from ascc.schema.identity import MatchKey
 from ascc.schema.models import Finding
@@ -108,6 +109,76 @@ def _result(finding: Finding, run: CorrelationRun) -> dict:
     return result
 
 
+def _json_value(value: object) -> object:
+    if isinstance(value, tuple | list | frozenset | set):
+        items = [_json_value(v) for v in value]
+        return sorted(items) if isinstance(value, frozenset | set) else items
+    return value
+
+
+def _node_properties(node: Node) -> dict:
+    props: dict = {
+        "key": str(node.key),
+        "members": sorted(str(member) for member in node.members),
+        "accounts": sorted(node.accounts),
+        "entry_findings": list(node.entry_findings),
+    }
+    if node.is_target:
+        props["data_classification"] = node.tags[TARGET_TAG]
+    return props
+
+
+def _edge_properties(edge: Edge) -> dict:
+    return {
+        "src": str(edge.src),
+        "dst": str(edge.dst),
+        "kind": edge.kind,
+        "method": edge.method,
+        "confidence": round(edge.confidence, 6),
+        "source": edge.source,
+        "evidence": edge.evidence,
+        "properties": {key: _json_value(value) for key, value in edge.properties},
+    }
+
+
+def _chain_properties(chain: Chain, nodes: dict) -> dict:
+    return {
+        "id": chain.id,
+        "hops": len(chain.edges),
+        "confidence": round(chain.confidence, 6),
+        "nodes": [_node_properties(nodes[key]) for key in chain.nodes],
+        "edges": [_edge_properties(edge) for edge in chain.edges],
+    }
+
+
+def _graph_stats(graph: Graph) -> dict:
+    by_kind: dict[str, int] = {}
+    for edge in graph.edges:
+        by_kind[edge.kind] = by_kind.get(edge.kind, 0) + 1
+    return {
+        "nodes": len(graph.nodes),
+        "edges": len(graph.edges),
+        "dropped_edges": graph.dropped_edges,
+        "edges_by_kind": dict(sorted(by_kind.items())),
+    }
+
+
+def graph_properties(run: CorrelationRun) -> dict:
+    """runs[0].properties for SARIF (CLAUDE.md, "Graph and chains (A2)").
+
+    chains: every reported chain with its nodes and only its own edges.
+    graph_stats: totals over the whole graph, so the edges left out of
+    chains stay visible as a count. Confidences are rounded to 6 places
+    for stable bytes; results[] is never touched.
+    """
+    graph = build_graph(run)
+    nodes = {node.key: node for node in graph.nodes}
+    return {
+        "chains": [_chain_properties(chain, nodes) for chain in find_chains(graph)],
+        "graph_stats": _graph_stats(graph),
+    }
+
+
 def to_sarif(run: CorrelationRun) -> dict:
     """Render a CorrelationRun as a SARIF 2.1.0 log. Pure — no I/O.
 
@@ -143,6 +214,7 @@ def to_sarif(run: CorrelationRun) -> dict:
                     }
                 },
                 "results": [result for *_, result in results],
+                "properties": graph_properties(run),
             }
         ],
     }
