@@ -331,6 +331,9 @@ _from_record before the format ever changes, not after.
 CREATION is not durable — only its contents. A crash right after the
 first put can leave no file at all. Add an O_DIRECTORY fsync after
 mkdir, or accept and document the window.
+- store: ✔ 2026-10-25 (A1) both items above are done: format check on read
+and directory fsync on create (### JsonlFactRepository; gates in
+tests/store/test_jsonl_repository.py and tests/test_cli_store.py).
 - store: validation is duplicated between memory.py and jsonl.py. The
 conformance suite makes drift fail immediately, so two copies are safe;
 extract a shared helper when Postgres makes it three.
@@ -603,6 +606,19 @@ observed_together carries the second-highest confidence in the table.
   encoding="utf-8", newline="\n", file mode 0o600.
 - A truncated trailing line is skipped, not raised: only the last line can
   tear, and losing one fact must not cost the other N-1.
+- Format check on read (A1, 2026-10-25): a record whose "v" is present and is
+  not the int 1 (True and "1" included) raises StoreFormatError (a ValueError,
+  exported by ascc.store) naming the line and the value. A record without "v"
+  reads as v1 (operator decision). A corrupt line that is not the last one
+  raises StoreFormatError too; only the trailing line may tear.
+- CLI: StoreFormatError while reading --store exits ExitCode.INTERNAL before
+  correlate, the SARIF write and the store write, so nothing is written:
+  appending v1 lines after a newer format would mix formats for good. Before
+  this, a v2 line was misparsed as v1 silently, and a corrupt middle line
+  escaped as an uncaught JSONDecodeError with exit status 1 = FINDINGS.
+- The put() that creates the file also fsyncs the store directory and the
+  parent of every directory it created: fsync of the file makes its bytes
+  durable, not its directory entry.
 - Conformance fixture: implementations are built from a tmp directory. The
   "no arguments" contract was InMemory-shaped and did not survive contact
   with a file-backed repository.

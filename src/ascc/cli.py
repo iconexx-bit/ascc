@@ -15,7 +15,7 @@ from ascc.correlate.run import effective_confidence
 from ascc.export.sarif import to_sarif
 from ascc.ingest.registry import parser_for
 from ascc.schema.models import BridgeFact, ScanRun
-from ascc.store import Fact, JsonlFactRepository
+from ascc.store import Fact, JsonlFactRepository, StoreFormatError
 
 
 class ExitCode(IntEnum):
@@ -162,6 +162,13 @@ def correlate(
             # CLI wiring + producer").
             typer.echo(f"Store unreadable, continuing without history: {exc}", err=True)
             historical = []
+        except StoreFormatError as exc:
+            # Unlike an I/O failure, a store in another format (or with a
+            # corrupt line) must not be appended to: v1 lines after v2 ones
+            # mix formats for good. Stop before correlate, SARIF and the store
+            # write, so nothing is written (see CLAUDE.md, JsonlFactRepository).
+            typer.echo(f"Store unreadable, nothing written: {exc}", err=True)
+            raise typer.Exit(code=ExitCode.INTERNAL) from None
 
     try:
         correlation_run = run_correlate(scan_runs, extra_facts=historical)

@@ -12,6 +12,8 @@ fixture changes shape.
 from __future__ import annotations
 
 import json
+import os
+import stat
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -138,3 +140,77 @@ def test_a_truncated_trailing_line_is_skipped(tmp_path: Path) -> None:
     [f] = [p for p in tmp_path.rglob("*") if p.is_file()]
     f.write_text(f.read_text(encoding="utf-8") + '{"v":1,"key":["tor', encoding="utf-8")
     assert JsonlFactRepository(tmp_path).get(("good",), now=T0) is not None
+
+
+# -- format version and corrupt lines (A1, 2026-10-25) ---------------------
+# StoreFormatError is imported inside each test, not at module level: while
+# it is missing these tests fail one by one instead of erroring collection.
+
+
+def _store_file(tmp_path: Path) -> Path:
+    [f] = [p for p in tmp_path.rglob("*") if p.is_file()]
+    return f
+
+
+def _append_raw(tmp_path: Path, text: str) -> None:
+    f = _store_file(tmp_path)
+    f.write_text(f.read_text(encoding="utf-8") + text, encoding="utf-8")
+
+
+@pytest.mark.parametrize("version", [2, 0, "1", True, None])
+def test_an_unknown_format_version_is_refused(tmp_path: Path, version) -> None:
+    """A newer (or garbled) format must not be misparsed as v1. True and "1"
+    compare or look equal to 1 and are refused all the same."""
+    from ascc.store import StoreFormatError
+
+    JsonlFactRepository(tmp_path).put(make_fact(key=("good",)), now=T0)
+    record = _lines(tmp_path)[0] | {"key": ["other"], "v": version}
+    _append_raw(tmp_path, json.dumps(record) + "\n")
+    with pytest.raises(StoreFormatError, match=r"line 2"):
+        list(JsonlFactRepository(tmp_path).all(now=T0))
+
+
+def test_a_record_without_a_version_reads_as_v1(tmp_path: Path) -> None:
+    """Operator decision 2026-10-25: an absent "v" is tolerated as v1."""
+    JsonlFactRepository(tmp_path).put(make_fact(key=("good",)), now=T0)
+    record = _lines(tmp_path)[0] | {"key": ["legacy"]}
+    del record["v"]
+    _append_raw(tmp_path, json.dumps(record) + "\n")
+    assert JsonlFactRepository(tmp_path).get(("legacy",), now=T0) is not None
+
+
+def test_a_corrupt_line_before_the_last_is_refused(tmp_path: Path) -> None:
+    """Only the trailing line can tear; a broken earlier line is corruption,
+    and it must surface as the store's own error, not a bare JSONDecodeError."""
+    from ascc.store import StoreFormatError
+
+    repo = JsonlFactRepository(tmp_path)
+    repo.put(make_fact(key=("first",)), now=T0)
+    _append_raw(tmp_path, '{"v":1,"key":["tor\n')
+    repo.put(make_fact(key=("third",)), now=T0)
+    with pytest.raises(StoreFormatError, match=r"line 2"):
+        list(JsonlFactRepository(tmp_path).all(now=T0))
+
+
+def test_creating_the_file_fsyncs_the_directory_chain(tmp_path: Path, monkeypatch) -> None:
+    """fsync of the file makes its bytes durable, not its name: the directory
+    entries created by the first put need their own fsync."""
+    target = tmp_path / "absent" / "store"
+    synced: set[tuple[int, int]] = set()
+    real_fsync = os.fsync
+
+    def spy(fd: int) -> None:
+        st = os.fstat(fd)
+        if stat.S_ISDIR(st.st_mode):
+            synced.add((st.st_dev, st.st_ino))
+        real_fsync(fd)
+
+    monkeypatch.setattr(os, "fsync", spy)
+    JsonlFactRepository(target).put(make_fact(), now=T0)
+
+    def ident(p: Path) -> tuple[int, int]:
+        st = p.stat()
+        return (st.st_dev, st.st_ino)
+
+    expected = {ident(tmp_path), ident(tmp_path / "absent"), ident(target)}
+    assert expected <= synced, "missing directory fsync after creating the store file"

@@ -27,7 +27,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 
-from ascc.store import JsonlFactRepository
+from ascc.store import Fact, JsonlFactRepository
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FIXTURE_REL = "fixtures/leaky_data_lake"
@@ -129,3 +129,47 @@ def test_store_only_write_failure_exits_internal(tmp_path: Path) -> None:
     proc = _run_correlate("--store", str(store))
     assert proc.returncode == EXIT_INTERNAL, f"rc={proc.returncode}\n{proc.stderr.decode()}"
     assert b"store" in proc.stderr.lower(), proc.stderr.decode()
+
+
+# -- a store this ascc cannot read: refuse before writing anything -------------
+
+
+def _store_with_raw_line(tmp_path: Path, raw: str) -> Path:
+    """A real one-fact store plus one raw line appended, then one more fact, so
+    the raw line is never the trailing (tolerated) one."""
+
+    def fact(*key: str) -> Fact:
+        return Fact(key=key, method="observed_together", confidence=0.95, observed_at=T0)
+
+    store = tmp_path / "facts"
+    repo = JsonlFactRepository(store)
+    repo.put(fact("a", "b"), now=T0)
+    [f] = [p for p in store.rglob("*") if p.is_file()]
+    f.write_text(f.read_text(encoding="utf-8") + raw + "\n", encoding="utf-8")
+    repo.put(fact("c", "d"), now=T0)
+    return store
+
+
+def _assert_refused(tmp_path: Path, store: Path, needle: bytes) -> None:
+    [f] = [p for p in store.rglob("*") if p.is_file()]
+    before = f.read_bytes()
+    out = tmp_path / "out.sarif.json"
+    proc = _run_correlate("--output", str(out), "--store", str(store))
+    assert proc.returncode == EXIT_INTERNAL, f"rc={proc.returncode}\n{proc.stderr.decode()}"
+    assert needle in proc.stderr.lower(), proc.stderr.decode()
+    assert f.read_bytes() == before, "a store this ascc cannot read must not be appended to"
+    assert not out.exists(), "the run aborts before SARIF: nothing is written"
+
+
+def test_a_store_in_a_newer_format_exits_internal_and_writes_nothing(tmp_path: Path) -> None:
+    """Appending v1 lines to a v2 file would mix formats; history read as v1
+    would be wrong history. The run stops before correlate."""
+    raw = '{"v":2,"key":["x","y"],"method":"observed_together","confidence":0.95,'
+    raw += '"observed_at":"2026-09-10T12:00:00+00:00","payload":{}}'
+    _assert_refused(tmp_path, _store_with_raw_line(tmp_path, raw), b"format version")
+
+
+def test_a_corrupt_store_line_exits_internal_and_writes_nothing(tmp_path: Path) -> None:
+    """A corrupt non-trailing line used to escape as JSONDecodeError: an
+    uncaught exception whose exit status 1 reads as ExitCode.FINDINGS."""
+    _assert_refused(tmp_path, _store_with_raw_line(tmp_path, '{"v":1,"key":["tor'), b"line 2")
