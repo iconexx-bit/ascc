@@ -141,7 +141,7 @@ ingest -> correlate -> [export]
 |---|---|
 | `schema/` | Identity resolution with provenance (`MatchKey`, `resolve()`), cluster bridging (`BridgeFact`, `ResourceCluster`) |
 | `ingest/` | Trivy, Prowler, Checkov parsers behind a common `ScannerParser` interface, plus a `sniff()`-based registry dispatcher |
-| `store/` | `FactRepository` with in-memory and JSONL backends; TTL marks facts stale, never deletes; `--store PATH` adds cross-run cluster and ghost membership to SARIF |
+| `store/` | `FactRepository` with in-memory and JSONL backends; TTL marks facts stale, never deletes; `--store PATH` adds cross-run cluster and ghost membership to SARIF; a store in another format version, or with a corrupt line before the last, is refused with exit code 70 and nothing is written |
 | `correlate/` | `build_clusters()` → `ResourceCluster` (Union-Find clustering, `bridge.py`) + `CorrelationRun` (tag-conflict resolution, `effective_confidence()`, `run.py`) |
 | `export/` | `to_sarif()` — SARIF 2.1.0, deterministic result ordering, `--output PATH` with atomic write |
 
@@ -151,7 +151,6 @@ in `.githooks/pre-commit` checks lock and venv drift and runs ruff; gitleaks run
 
 ## Roadmap
 
-- `v0.1.1`: store format-version check on load; durable directory fsync
 - Resource graph and attack-chain detection, exported in SARIF `properties`
 - Deterministic risk score with MITRE ATT&CK mapping
 - PostgreSQL backend behind `FactRepository`
