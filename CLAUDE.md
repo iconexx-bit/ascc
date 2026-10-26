@@ -755,11 +755,15 @@ Code: src/ascc/correlate/graph.py. Gate: tests/test_graph.py.
   deduplicated by (src, kind, dst, method) and sorted; chains ordered by
   (-hops, node keys); chain id = "chain-" + first 12 hex of sha256 over the
   node-key sequence. Identical across PYTHONHASHSEED (test).
-- Export (A2-2, next PR): SARIF runs[0].properties.chains (nodes with
-  entry_findings, edges with every field above) and runs[0].properties.
-  graph_stats {nodes, edges, dropped_edges, edges_by_kind}; only edges on
-  chains are exported; never new results[]. The LLM never touches edges or
-  chains.
+- Export (A2-2): export.sarif.graph_properties(run) -> SARIF
+  runs[0].properties. chains[]: id, hops, confidence, nodes (key, members,
+  accounts, entry_findings; data_classification on targets), edges (src, dst,
+  kind, method, confidence, source, evidence, properties). graph_stats
+  {nodes, edges, dropped_edges, edges_by_kind} counts the whole graph, so
+  edges left off chains stay visible as numbers; only edges on chains are
+  exported. Confidences are rounded to 6 places for stable bytes. Never new
+  results[]. The CLI prints "Attack chains: N (longest H hops, confidence C)".
+  The LLM never touches edges or chains.
 - Fixture expectation (leaky_data_lake): one chain security group -> instance
   -> role -> bucket, 3 hops, confidence 0.6. Without prowler.json: no edges,
   no chains.
