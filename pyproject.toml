@@ -1,6 +1,6 @@
 [project]
 name = "ascc"
-version = "0.1.0"
+version = "0.1.1"
 description = "AI Security Command Center — correlation layer over Trivy, Prowler, Checkov"
 readme = "README.md"
 requires-python = ">=3.11"

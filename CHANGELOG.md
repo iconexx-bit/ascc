@@ -3,6 +3,51 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [SemVer](https://semver.org/).
 
+## [0.1.1] — 2026-10-26
+
+### Fixed
+
+- Store: a record whose format version `"v"` is present and is not `1` is
+  refused with `StoreFormatError` instead of being read as v1. A record
+  without `"v"` still reads as v1.
+- Store: a corrupt line other than the last one raises `StoreFormatError`
+  instead of a bare `JSONDecodeError`. Through the CLI it surfaced as an
+  uncaught exception with exit status 1 — the code reserved for findings.
+- CLI: a `--store` refused for format reasons exits INTERNAL (70) before
+  correlation and writes nothing (no SARIF, no appended lines). An unreadable
+  store (I/O error) still degrades to no history.
+- Store: the put that creates the store file also fsyncs the directory entries
+  it created: the file's creation is made durable, not only its contents.
+
+### Changed
+
+- Development tools moved from the `dev` extra to the PEP 735 dependency group
+  `dev`, installed by a plain `uv sync`; `--extra dev` is gone.
+- uv is pinned to 0.13.5 (`[tool.uv] required-version` in `pyproject.toml`) for
+  local work and CI.
+- CI tests Python 3.11 (the `requires-python` floor) and 3.12; the README badge
+  names the tested versions.
+
+### Security
+
+- Workflow actions are pinned to full commit SHAs and kept current by weekly
+  Dependabot version updates.
+- `actions/checkout` no longer persists credentials in `.git`.
+- `GITHUB_TOKEN` is read-only in the CI workflow; only CodeQL holds a write
+  scope (`security-events`).
+- Dropped the unused `pre-commit` dev dependency and its transitive packages.
+- Repository rulesets (GitHub settings, not part of the source tree): `main`
+  takes changes only through a pull request with five required checks and
+  signed commits; `v*` tags cannot be moved or deleted.
+
+### Internal
+
+- SARIF output is validated against the official 2.1.0 schema in CI.
+- Commit Lint checks the pull request's own commits; free-form kebab-case scope.
+- CLAUDE.md contract anchors are checked by a test instead of a deletion guard.
+- Release gate: `tests/test_release.py` keeps CHANGELOG, `uv.lock` and the
+  README roadmap in step with the version in `pyproject.toml`.
+
 ## [0.1.0] — 2026-09-15
 
 ### Added
