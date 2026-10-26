@@ -523,6 +523,9 @@ changes, otherwise it is trust smuggled into the volatility axis.
    replace(fact, stale=is_stale(fact.method, fact.observed_at, now)).
    Policy is the single owner; no repository re-implements expiry.
 - is_stale(method, observed_at, as_of) — pure, primitives only.
+- MAX_CONFIDENCE and TTL cover identity methods only. Graph relation methods
+   (attached_security_group, profile_role_name, policy_wildcard) live in
+   graph.EDGE_CONFIDENCE, see "Graph and chains (A2)".
 - Validation lives in put(), never in Fact.__post_init__: unknown method
    raises KeyError, confidence above MAX_CONFIDENCE[method] raises ValueError,
    observed_at > now raises ValueError. Fact stays a dumb record.
@@ -701,6 +704,65 @@ observed_together carries the second-highest confidence in the table.
   run.resources. Every parser resolution MUST record a Resource, or a
   live resource will be reported as a ghost. Exact provenance
   (from_history on replayed facts) is backlogged.
+
+## Graph and chains (A2)
+
+Contract 2026-10-26 (runbook v8.25-v8.26), written before the code.
+Code: src/ascc/correlate/graph.py. Gate: tests/test_graph.py.
+
+- Nodes. A node is one cluster of CorrelationRun.clusters (the same clusters
+  the SARIF export reads, history included when --store is populated) or one
+  run resource key that is in no cluster. node.key is the cluster's derived
+  representative(): used for ordering and ids only, never stored (see "Cluster
+  representative is derived, never stored"). A finding on any member belongs
+  to the node. node.tags = union of the members' tags; a tag whose members
+  disagree is left out (TagConflict already reports it).
+- account(node) = the set of `cloud.account.uid` values of the OCSF findings
+  attached to any member; empty set = unknown. Not from the key: MatchKey has
+  no account, and an S3 ARN has an empty account field.
+- Edges are directed in attack order and built from Finding.raw of this run
+  only. History (the store) only merges keys; it never adds an edge. A
+  reference that resolves to no node is counted in dropped_edges, never turned
+  into an invented node. Edges are not persisted in A2.
+  - exposes: security group -> instance; method attached_security_group;
+    confidence 1.0; source: `security_groups` in the instance record.
+  - assumes: instance -> IAM role; method profile_role_name; confidence 0.6;
+    source: `iam_instance_profile_arn`; the role is the node with member
+    iam:role:<profile name> after _normalize_identifier(). A role with a known
+    account other than the profile ARN's account gets no edge. Heuristic: the
+    AWS console names a role's instance profile after the role, Terraform does
+    not; 0.6 says exactly that.
+  - can_access: role -> every other node; method policy_wildcard; confidence
+    1.0; source: `inline_policy_actions == ["*"]` and
+    `inline_policy_resources == ["*"]`. A node with a known account that does
+    not match the role's gets no edge. Properties: account_match ("same" |
+    "unverified"), deny_check = "not_observed", unobserved_layers =
+    ["bucket_policy", "permissions_boundary", "rcp", "scp"] (sorted): explicit
+    denies in those layers are not in the scanner data, so the edge is an upper
+    bound on access, and says so.
+  Source fields are Prowler OCSF `resources[].data`.
+- Relation confidences live in graph.EDGE_CONFIDENCE; identity confidences in
+  store.policy.MAX_CONFIDENCE. One document, two code tables, never mixed:
+  identity says "A and B are one resource", relation says "A leads to B".
+- Chains. Entry = node with a NETWORK_EXPOSURE finding (node.entry_findings
+  lists scanner:rule_id). Target = node whose tags carry DataClassification.
+  A chain is a simple directed path entry -> target with >= 1 edge; it stops
+  at the first target. A path contained in a longer reported path is not
+  reported on its own; its entry stays visible in entry_findings. Chain
+  confidence = product of its edge confidences (confidence composes, never
+  replaces).
+- Determinism: stdlib only (structural test); nodes sorted by key; edges
+  deduplicated by (src, kind, dst, method) and sorted; chains ordered by
+  (-hops, node keys); chain id = "chain-" + first 12 hex of sha256 over the
+  node-key sequence. Identical across PYTHONHASHSEED (test).
+- Export (A2-2, next PR): SARIF runs[0].properties.chains (nodes with
+  entry_findings, edges with every field above) and runs[0].properties.
+  graph_stats {nodes, edges, dropped_edges, edges_by_kind}; only edges on
+  chains are exported; never new results[]. The LLM never touches edges or
+  chains.
+- Fixture expectation (leaky_data_lake): one chain security group -> instance
+  -> role -> bucket, 3 hops, confidence 0.6. Without prowler.json: no edges,
+  no chains.
 
 ## Kubernetes
 
