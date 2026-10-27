@@ -13,8 +13,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
   network-exposed entry to a node tagged `DataClassification`, and its
   confidence is the product of its edges.
 - SARIF: chains in `runs[0].properties.chains`, graph totals in
-  `runs[0].properties.graph_stats`; `results[]` is unchanged. The CLI prints
-  `Attack chains: N (longest H hops, confidence C)`.
+  `runs[0].properties.graph_stats`; no result is added for a chain. The CLI
+  prints `Attack chains: N (longest H hops, confidence C)`.
+- SARIF: a result on a chain node carries `properties.chain_ids` (sorted).
+  Result count, order and `partialFingerprints` are unchanged.
 
 ### Documentation
 

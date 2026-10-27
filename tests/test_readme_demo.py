@@ -236,6 +236,24 @@ def test_dropping_scanners_is_described_truthfully(
     assert "without Prowler there is no chain" in _flat(section)
 
 
+def test_sarif_links_are_counted(section: str, run0: dict, chain: dict) -> None:
+    joined = {id(r) for n in chain["nodes"] for r in _on_node(run0, n)}
+    linked = {
+        id(r)
+        for r in run0["results"]
+        if chain["id"] in r.get("properties", {}).get("chain_ids", [])
+    }
+    assert linked == joined, "SARIF chain_ids must equal the member-key join shown in the README"
+    n = len(run0["results"])
+    share = f"all {n}" if len(linked) == n else f"{len(linked)} of the {n}"
+    claim = (
+        f"The SARIF carries the same join: {share} results carry "
+        f'`properties.chain_ids` = `["{chain["id"]}"]`'
+    )
+    assert claim in _flat(section), f"README must carry: {claim}"
+    assert "does not link" not in section
+
+
 def test_roadmap_no_longer_promises_chains() -> None:
     text = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
     roadmap = text.split("## Roadmap", 1)[1].split("\n## ", 1)[0]

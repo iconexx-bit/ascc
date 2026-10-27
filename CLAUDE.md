@@ -767,6 +767,15 @@ Code: src/ascc/correlate/graph.py. Gate: tests/test_graph.py.
 - Fixture expectation (leaky_data_lake): one chain security group -> instance
   -> role -> bucket, 3 hops, confidence 0.6. Without prowler.json: no edges,
   no chains.
+- Chain links (A3-1b, runbook v8.31). A result whose resource ids include a
+  member of a chain node carries results[].properties.chain_ids = sorted ids
+  of those chains; omitted when empty, like cluster_members. The join is
+  graph.chain_ids_by_key(graph, chains): the same member-key rule as "a
+  finding on any member belongs to the node", computed once per to_sarif
+  together with the chains in runs[0].properties. Result count, order,
+  partialFingerprints and every other byte of results[] stay as before
+  (pinned hash). Chain information in a result lives only in chain_ids.
+  Gate: tests/test_sarif_chain_links.py.
 
 ## README demo (A3)
 
@@ -786,8 +795,9 @@ Gate: tests/test_readme_demo.py.
   through cluster membership. "N scanners -> 1 chain" is written only when
   the edges' sources support it (the test drops scanners and checks).
 - Findings on a node are joined by member key (results[] location
-  fullyQualifiedName in node.members). SARIF does not link results to
-  chains yet (Backlog, graph); the README says the join is the reader's.
+  fullyQualifiedName in node.members). Since A3-1b the SARIF carries that
+  join as results[].properties.chain_ids; the README counts the linked
+  results and the test checks they equal the join.
 
 ## Kubernetes
 
