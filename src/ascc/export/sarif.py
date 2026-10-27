@@ -22,8 +22,10 @@ from ascc.schema.taxonomy import Severity
 
 FINGERPRINT_VERSION = "asccDedupKey/v1"
 
+# The id the published OASIS schema gives itself (CLAUDE.md, "Determinism"); the
+# raw.githubusercontent sarif-spec/master/Schemata path was removed upstream on 2024-05-02.
 SARIF_SCHEMA_URI = (
-    "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json"
+    "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json"
 )
 TOOL_NAME = "ASCC"
 

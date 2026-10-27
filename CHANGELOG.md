@@ -3,6 +3,15 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- SARIF `$schema` now names the OASIS errata01 schema
+  (`https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json`).
+  The previous URI (`raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/...`) no longer
+  resolves: the path was removed upstream on 2024-05-02. Only that line of the output changes.
+
 ## [0.2.0] — 2026-10-27
 
 ### Added
