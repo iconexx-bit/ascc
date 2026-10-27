@@ -768,6 +768,27 @@ Code: src/ascc/correlate/graph.py. Gate: tests/test_graph.py.
   -> role -> bucket, 3 hops, confidence 0.6. Without prowler.json: no edges,
   no chains.
 
+## README demo (A3)
+
+Contract 2026-10-26 (runbook v8.30), written before the README text.
+Gate: tests/test_readme_demo.py.
+
+- README.md holds one block between `<!-- readme-demo:chain -->` and
+  `<!-- /readme-demo:chain -->`. Every number, key and the JSON fragment in it
+  is a projection of the golden SARIF (tests/data/leaky_data_lake.sarif.json)
+  or of one live CLI run. Regenerating the golden means rewriting that block
+  in the same PR; the failing test prints the line the README must carry.
+- The JSON fragment may drop keys, never change values or reorder lists. The
+  wildcard edge keeps deny_check and unobserved_layers: the trim must not
+  remove what the edge did not see.
+- Provenance is stated, not implied. On this fixture all chain edges come
+  from Prowler data; Trivy and Checkov contribute findings on chain nodes
+  through cluster membership. "N scanners -> 1 chain" is written only when
+  the edges' sources support it (the test drops scanners and checks).
+- Findings on a node are joined by member key (results[] location
+  fullyQualifiedName in node.members). SARIF does not link results to
+  chains yet (Backlog, graph); the README says the join is the reader's.
+
 ## Kubernetes
 
 - Findings source only, NOT runtime. Ephemeral kind/k3d for fixtures.
