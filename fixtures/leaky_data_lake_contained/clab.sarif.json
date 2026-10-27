@@ -1,0 +1,254 @@
+{
+  "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "containment-lab",
+          "informationUri": "https://github.com/iconexx-bit/ai-agent-containment-lab",
+          "rules": [
+            {
+              "id": "CLAB-EGRESS-001",
+              "name": "EgressBlocked",
+              "shortDescription": {
+                "text": "Agent egress outside the range is blocked, by IP and by name"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "clab/control": "egress"
+              }
+            },
+            {
+              "id": "CLAB-TRIPWIRE-001",
+              "name": "TripwireSinkholed",
+              "shortDescription": {
+                "text": "The tripwire domain resolves to the sinkhole"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "7.5",
+                "clab/control": "tripwire"
+              }
+            },
+            {
+              "id": "CLAB-SIGMA-001",
+              "name": "DetectionRulesPresent",
+              "shortDescription": {
+                "text": "Detection pack rule files are present in the SIEM (the API lists files on disk; loading is proven only by alerts)"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "clab/control": "sigma"
+              }
+            },
+            {
+              "id": "CLAB-CANARY-001",
+              "name": "CanariesPresent",
+              "shortDescription": {
+                "text": "Canary accounts are present in the range identity provider"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.0",
+                "clab/control": "canaries"
+              }
+            },
+            {
+              "id": "CLAB-SIMCA-001",
+              "name": "SimCaPresent",
+              "shortDescription": {
+                "text": "The simulation CA is present (PEM header check)"
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "security-severity": "3.0",
+                "clab/control": "sim_ca"
+              }
+            },
+            {
+              "id": "CLAB-TTC-001",
+              "name": "ContainedInTime",
+              "shortDescription": {
+                "text": "The killswitch contains the agent within the TTC threshold in every measured cycle"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "clab/control": "ttc"
+              }
+            }
+          ]
+        }
+      },
+      "properties": {
+        "schema": "clab/v1",
+        "binding": {
+          "method": "operator_declared",
+          "resource_arn": "arn:aws:ec2:us-east-1:123456789012:instance/i-0a1b2c3d4e5f67890"
+        },
+        "verdict": "PASS",
+        "probe": {
+          "ts": "2026-10-27T05:08:35Z",
+          "sha256": "18b74eb6d37c9b41b4d6759283e9ab783fce839fedb48d4ae4af4b95ad2870ad"
+        },
+        "ttc": {
+          "sha256": "07b14be1b05f75ccc94c22b82f86caa4692c8b2c58e5b467c9e5024005f4ead0"
+        }
+      },
+      "results": [
+        {
+          "ruleId": "CLAB-EGRESS-001",
+          "kind": "pass",
+          "level": "none",
+          "message": {
+            "text": "egress_blocked: pass — rc_ip=7 rc_dns=7 (blocked set: 6,7,28)"
+          },
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "arn:aws:ec2:us-east-1:123456789012:instance/i-0a1b2c3d4e5f67890",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "control": "egress",
+            "method": "docker-run:curl"
+          }
+        },
+        {
+          "ruleId": "CLAB-TRIPWIRE-001",
+          "kind": "pass",
+          "level": "none",
+          "message": {
+            "text": "tripwire_sinkholed: pass — canary.tripwire-range.invalid sinkholed -> ::"
+          },
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "arn:aws:ec2:us-east-1:123456789012:instance/i-0a1b2c3d4e5f67890",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "control": "tripwire",
+            "method": "getent-in-range"
+          }
+        },
+        {
+          "ruleId": "CLAB-SIGMA-001",
+          "kind": "pass",
+          "level": "none",
+          "message": {
+            "text": "sigma_loaded: pass — present=8 expected=8 range=100200-100299"
+          },
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "arn:aws:ec2:us-east-1:123456789012:instance/i-0a1b2c3d4e5f67890",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "control": "sigma",
+            "method": "wazuh-api"
+          }
+        },
+        {
+          "ruleId": "CLAB-CANARY-001",
+          "kind": "pass",
+          "level": "none",
+          "message": {
+            "text": "canaries_present: pass — all present: svc-legacy backup-admin ctf-canary"
+          },
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "arn:aws:ec2:us-east-1:123456789012:instance/i-0a1b2c3d4e5f67890",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "control": "canaries",
+            "method": "docker-exec:getent"
+          }
+        },
+        {
+          "ruleId": "CLAB-SIMCA-001",
+          "kind": "pass",
+          "level": "none",
+          "message": {
+            "text": "sim_ca_present: pass — pem-header ok sha256=07d47afcee023a84e47ccecbbe594ea6e2b047e7818ababd3636098da3fc5951 (no openssl CLI in image)"
+          },
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "arn:aws:ec2:us-east-1:123456789012:instance/i-0a1b2c3d4e5f67890",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "control": "sim_ca",
+            "method": "sha256sum-fallback"
+          }
+        },
+        {
+          "ruleId": "CLAB-TTC-001",
+          "kind": "pass",
+          "level": "none",
+          "message": {
+            "text": "TTC median 1598 ms (min 1568, max 1687); 5 of 5 cycles under 60000 ms, 5 completed"
+          },
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "arn:aws:ec2:us-east-1:123456789012:instance/i-0a1b2c3d4e5f67890",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "control": "ttc",
+            "method": "measure-ttc",
+            "n": 5,
+            "median_ms": 1598,
+            "min_ms": 1568,
+            "max_ms": 1687,
+            "threshold_ms": 60000
+          }
+        }
+      ]
+    }
+  ]
+}

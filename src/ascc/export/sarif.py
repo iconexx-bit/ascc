@@ -16,8 +16,8 @@ from ascc.correlate.graph import (
     find_chains,
 )
 from ascc.correlate.run import CorrelationRun
-from ascc.schema.identity import MatchKey
-from ascc.schema.models import Finding
+from ascc.schema.identity import MatchKey, Resolution
+from ascc.schema.models import Evidence, Finding
 from ascc.schema.taxonomy import Severity
 
 FINGERPRINT_VERSION = "asccDedupKey/v1"
@@ -119,9 +119,30 @@ def _result(finding: Finding, run: CorrelationRun, links: dict[str, tuple[str, .
     chain_ids = sorted({cid for rid in finding.resource_ids for cid in links.get(rid, ())})
     if chain_ids:
         properties["chain_ids"] = chain_ids
+    # CLAUDE.md, "Runtime evidence (A3)": a declared binding is said, never implied.
+    declared = [r for r in finding.resolutions if r.method == "operator_declared"]
+    if declared:
+        properties["binding"] = _binding(declared[0])
     if properties:
         result["properties"] = properties
     return result
+
+
+def _binding(resolution: Resolution) -> dict:
+    return {"method": resolution.method, "confidence": round(resolution.confidence, 6)}
+
+
+def _evidence_properties(item: Evidence) -> dict:
+    return {
+        "resource": item.resource_id,
+        "source": item.scanner,
+        "rule_id": item.rule_id,
+        "control": item.control,
+        "status": item.status,
+        "message": item.message,
+        "binding": _binding(item.resolution),
+        "provenance": dict(item.provenance),
+    }
 
 
 def _json_value(value: object) -> object:
@@ -140,6 +161,8 @@ def _node_properties(node: Node) -> dict:
     }
     if node.is_target:
         props["data_classification"] = node.tags[TARGET_TAG]
+    if node.evidence:
+        props["evidence"] = [_evidence_properties(item) for item in node.evidence]
     return props
 
 
@@ -166,16 +189,27 @@ def _chain_properties(chain: Chain, nodes: dict) -> dict:
     }
 
 
-def _graph_stats(graph: Graph) -> dict:
+def _graph_stats(graph: Graph, chains: tuple[Chain, ...]) -> dict:
     by_kind: dict[str, int] = {}
     for edge in graph.edges:
         by_kind[edge.kind] = by_kind.get(edge.kind, 0) + 1
-    return {
+    stats: dict = {
         "nodes": len(graph.nodes),
         "edges": len(graph.edges),
         "dropped_edges": graph.dropped_edges,
         "edges_by_kind": dict(sorted(by_kind.items())),
     }
+    items = [item for node in graph.nodes for item in node.evidence]
+    if items:
+        # Evidence on a node no chain reaches is still counted, never dropped silently.
+        on_chain = {key for chain in chains for key in chain.nodes}
+        stats["evidence"] = {
+            "total": len(items),
+            "verified": sum(item.status == "verified" for item in items),
+            "not_verified": sum(item.status == "not_verified" for item in items),
+            "on_chain_nodes": sum(len(n.evidence) for n in graph.nodes if n.key in on_chain),
+        }
+    return stats
 
 
 def graph_properties(run: CorrelationRun) -> dict:
@@ -195,7 +229,7 @@ def _graph_properties(graph: Graph, chains: tuple[Chain, ...]) -> dict:
     nodes = {node.key: node for node in graph.nodes}
     return {
         "chains": [_chain_properties(chain, nodes) for chain in chains],
-        "graph_stats": _graph_stats(graph),
+        "graph_stats": _graph_stats(graph, chains),
     }
 
 

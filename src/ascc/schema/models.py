@@ -75,6 +75,23 @@ class Finding:
         return tuple(sorted(self.resource_ids)) + (self.rule_id, self.scanner)
 
 
+@dataclass(frozen=True, slots=True)
+class Evidence:
+    """A control verified (or explicitly not verified) on a resource: the
+    PASS side of a judgement, which is not a finding (CLAUDE.md, "Runtime
+    evidence (A3)"). status is "verified" or "not_verified"; resolution says
+    how the resource was named and how far that naming is trusted."""
+
+    resource_id: str
+    scanner: str
+    rule_id: str
+    control: str
+    status: str
+    message: str
+    resolution: Resolution
+    provenance: tuple[tuple[str, str], ...] = ()
+
+
 @dataclass(slots=True)
 class ScanRun:
     scanner: str
@@ -82,3 +99,4 @@ class ScanRun:
     findings: list[Finding] = field(default_factory=list)
     resources: dict[str, Resource] = field(default_factory=dict)
     bridge_facts: list[BridgeFact] = field(default_factory=list)
+    evidence: list[Evidence] = field(default_factory=list)

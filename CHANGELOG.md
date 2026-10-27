@@ -5,6 +5,22 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ## [Unreleased]
 
+### Added
+
+- Runtime evidence from the containment lab: a SARIF log with
+  `run.properties.schema` `clab/v1` (emitted by
+  [ai-agent-containment-lab](https://github.com/iconexx-bit/ai-agent-containment-lab))
+  is ingested as scanner `clab`. A failed control becomes a finding
+  (category `containment`) with `properties.binding`; a verified or
+  not-verified control becomes evidence on the graph node of the declared
+  resource (`chains[].nodes[].evidence`, `graph_stats.evidence`). Evidence adds
+  no result and changes no chain.
+- The binding to a resource is declared by the operator, not observed:
+  method `operator_declared`, confidence 0.5, said in every output. A lab file
+  that breaks the contract is refused (exit 70, nothing written).
+- Fixture `fixtures/leaky_data_lake_contained/`: the three scanner files plus
+  the output of a live lab run (2026-10-27).
+
 ### Fixed
 
 - SARIF `$schema` now names the OASIS errata01 schema
