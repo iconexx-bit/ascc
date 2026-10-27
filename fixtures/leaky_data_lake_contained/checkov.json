@@ -1,0 +1,104 @@
+{
+  "check_type": "terraform",
+  "results": {
+    "passed_checks": [],
+    "failed_checks": [
+      {
+        "check_id": "CKV_AWS_20",
+        "check_name": "S3 Bucket has an ACL defined which allows public READ access.",
+        "check_result": { "result": "FAILED", "evaluated_keys": ["acl"] },
+        "code_block": [
+          [1, "resource \"aws_s3_bucket\" \"datalake_raw\" {\n"],
+          [2, "  bucket = \"datalake-raw\"\n"],
+          [3, "  acl    = \"public-read\"\n"],
+          [4, "}\n"]
+        ],
+        "file_path": "/main.tf",
+        "file_abs_path": "/workspace/infra/main.tf",
+        "repo_file_path": "infra/main.tf",
+        "file_line_range": [1, 4],
+        "resource": "aws_s3_bucket.datalake_raw",
+        "resource_address": "aws_s3_bucket.datalake_raw",
+        "check_class": "checkov.terraform.checks.resource.aws.S3PublicACLRead",
+        "severity": "HIGH",
+        "guideline": "https://docs.bridgecrew.io/docs/s3_16-s3-block-public-read"
+      },
+      {
+        "check_id": "CKV_AWS_19",
+        "check_name": "Ensure all data stored in the S3 bucket is securely encrypted at rest",
+        "check_result": { "result": "FAILED", "evaluated_keys": ["server_side_encryption_configuration"] },
+        "code_block": [
+          [1, "resource \"aws_s3_bucket\" \"datalake_raw\" {\n"],
+          [2, "  bucket = \"datalake-raw\"\n"],
+          [3, "  acl    = \"public-read\"\n"],
+          [4, "}\n"]
+        ],
+        "file_path": "/main.tf",
+        "file_abs_path": "/workspace/infra/main.tf",
+        "repo_file_path": "infra/main.tf",
+        "file_line_range": [1, 4],
+        "resource": "aws_s3_bucket.datalake_raw",
+        "resource_address": "aws_s3_bucket.datalake_raw",
+        "check_class": "checkov.terraform.checks.resource.aws.S3Encryption",
+        "severity": "HIGH",
+        "guideline": "https://docs.bridgecrew.io/docs/s3_14-data-encrypted-at-rest"
+      },
+      {
+        "check_id": "CKV_AWS_18",
+        "check_name": "Ensure the S3 bucket has access logging enabled",
+        "check_result": { "result": "FAILED", "evaluated_keys": ["logging"] },
+        "code_block": [
+          [1, "resource \"aws_s3_bucket\" \"datalake_raw\" {\n"],
+          [2, "  bucket = \"datalake-raw\"\n"],
+          [3, "  acl    = \"public-read\"\n"],
+          [4, "}\n"]
+        ],
+        "file_path": "/main.tf",
+        "file_abs_path": "/workspace/infra/main.tf",
+        "repo_file_path": "infra/main.tf",
+        "file_line_range": [1, 4],
+        "resource": "aws_s3_bucket.datalake_raw",
+        "resource_address": "aws_s3_bucket.datalake_raw",
+        "check_class": "checkov.terraform.checks.resource.aws.S3BucketLogging",
+        "severity": "MEDIUM",
+        "guideline": "https://docs.bridgecrew.io/docs/s3_13-enable-logging"
+      },
+      {
+        "check_id": "CKV_AWS_40",
+        "check_name": "Ensure IAM policies that allow full \"*-*\" administrative privileges are not created",
+        "check_result": { "result": "FAILED", "evaluated_keys": ["inline_policy"] },
+        "code_block": [
+          [1, "resource \"aws_iam_role\" \"datalake_etl_role\" {\n"],
+          [2, "  name = \"datalake-etl-role\"\n"],
+          [3, "\n"],
+          [4, "  inline_policy {\n"],
+          [5, "    name = \"admin-access\"\n"],
+          [6, "    policy = jsonencode({\n"],
+          [7, "      Statement = [{ Effect = \"Allow\", Action = \"*\", Resource = \"*\" }]\n"],
+          [8, "    })\n"],
+          [9, "  }\n"],
+          [10, "}\n"]
+        ],
+        "file_path": "/main.tf",
+        "file_abs_path": "/workspace/infra/main.tf",
+        "repo_file_path": "infra/main.tf",
+        "file_line_range": [1, 10],
+        "resource": "aws_iam_role.datalake_etl_role",
+        "resource_address": "aws_iam_role.datalake_etl_role",
+        "check_class": "checkov.terraform.checks.resource.aws.IAMPolicyDocumentNoAdministrativePrivileges",
+        "severity": "CRITICAL",
+        "guideline": "https://docs.bridgecrew.io/docs/iam_1-avoid-use-of-wildcards-in-iam-policies"
+      }
+    ],
+    "skipped_checks": [],
+    "parsing_errors": []
+  },
+  "summary": {
+    "passed": 9,
+    "failed": 4,
+    "skipped": 0,
+    "parsing_errors": 0,
+    "resource_count": 4,
+    "checkov_version": "3.2.257"
+  }
+}

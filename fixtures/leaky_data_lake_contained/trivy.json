@@ -1,0 +1,203 @@
+{
+  "SchemaVersion": 2,
+  "CreatedAt": "2026-07-28T09:14:32.123456789Z",
+  "ArtifactName": "/opt/datalake-etl",
+  "ArtifactType": "filesystem",
+  "Metadata": {
+    "OS": {
+      "Family": "amazon",
+      "Name": "2"
+    }
+  },
+  "Results": [
+    {
+      "Target": "i-0a1b2c3d4e5f67890 (amazon linux 2)",
+      "Class": "os-pkgs",
+      "Type": "amazon",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2021-44228",
+          "PkgID": "log4j-core@2.14.1",
+          "PkgName": "log4j-core",
+          "InstalledVersion": "2.14.1",
+          "FixedVersion": "2.15.0",
+          "Status": "fixed",
+          "SeveritySource": "nvd",
+          "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2021-44228",
+          "DataSource": {
+            "ID": "nvd",
+            "Name": "National Vulnerability Database",
+            "URL": "https://nvd.nist.gov/"
+          },
+          "Title": "log4j-core: Remote code execution in Log4j2 when message lookup substitution is enabled (Log4Shell)",
+          "Description": "Apache Log4j2 JNDI features used in configuration, log messages, and parameters do not protect against attacker-controlled LDAP and other JNDI-related endpoints, allowing remote code execution.",
+          "Severity": "CRITICAL",
+          "CweIDs": ["CWE-502", "CWE-400", "CWE-20"],
+          "CVSS": {
+            "nvd": {
+              "V3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+              "V3Score": 10.0
+            }
+          },
+          "References": [
+            "https://logging.apache.org/log4j/2.x/security.html",
+            "https://nvd.nist.gov/vuln/detail/CVE-2021-44228"
+          ],
+          "PublishedDate": "2021-12-10T10:15:00Z",
+          "LastModifiedDate": "2023-11-07T03:39:00Z"
+        },
+        {
+          "VulnerabilityID": "CVE-2022-42889",
+          "PkgID": "commons-text@1.9",
+          "PkgName": "commons-text",
+          "InstalledVersion": "1.9",
+          "FixedVersion": "1.10.0",
+          "Status": "fixed",
+          "SeveritySource": "nvd",
+          "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2022-42889",
+          "DataSource": {
+            "ID": "nvd",
+            "Name": "National Vulnerability Database",
+            "URL": "https://nvd.nist.gov/"
+          },
+          "Title": "commons-text: variable interpolation RCE (Text4Shell)",
+          "Description": "Apache Commons Text prior to 1.10.0 performs variable interpolation which can result in arbitrary code execution when untrusted input is used for lookups.",
+          "Severity": "HIGH",
+          "CweIDs": ["CWE-917"],
+          "CVSS": {
+            "nvd": {
+              "V3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "V3Score": 9.8
+            }
+          },
+          "References": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2022-42889"
+          ],
+          "PublishedDate": "2022-10-13T18:15:00Z",
+          "LastModifiedDate": "2022-12-08T18:57:00Z"
+        },
+        {
+          "VulnerabilityID": "CVE-2022-3602",
+          "PkgID": "openssl@3.0.5",
+          "PkgName": "openssl",
+          "InstalledVersion": "3.0.5",
+          "FixedVersion": "3.0.7",
+          "Status": "fixed",
+          "SeveritySource": "nvd",
+          "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2022-3602",
+          "DataSource": {
+            "ID": "nvd",
+            "Name": "National Vulnerability Database",
+            "URL": "https://nvd.nist.gov/"
+          },
+          "Title": "openssl: X.509 Email Address 4-byte Buffer Overflow",
+          "Description": "A buffer overrun can be triggered in X.509 certificate verification, specifically in name constraint checking of email addresses.",
+          "Severity": "HIGH",
+          "CweIDs": ["CWE-787"],
+          "CVSS": {
+            "nvd": {
+              "V3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "V3Score": 7.5
+            }
+          },
+          "References": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2022-3602"
+          ],
+          "PublishedDate": "2022-11-01T16:15:00Z",
+          "LastModifiedDate": "2022-11-17T15:53:00Z"
+        },
+        {
+          "VulnerabilityID": "CVE-2023-38545",
+          "PkgID": "curl@7.79.1",
+          "PkgName": "curl",
+          "InstalledVersion": "7.79.1",
+          "FixedVersion": "8.4.0",
+          "Status": "fixed",
+          "SeveritySource": "nvd",
+          "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2023-38545",
+          "DataSource": {
+            "ID": "nvd",
+            "Name": "National Vulnerability Database",
+            "URL": "https://nvd.nist.gov/"
+          },
+          "Title": "curl: SOCKS5 heap buffer overflow",
+          "Description": "A heap-based buffer overflow can occur in curl's SOCKS5 proxy handshake when the target hostname is too long.",
+          "Severity": "MEDIUM",
+          "CweIDs": ["CWE-122"],
+          "CVSS": {
+            "nvd": {
+              "V3Vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "V3Score": 7.5
+            }
+          },
+          "References": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2023-38545"
+          ],
+          "PublishedDate": "2023-10-11T14:15:00Z",
+          "LastModifiedDate": "2023-10-24T14:36:00Z"
+        }
+      ]
+    },
+    {
+      "Target": "infra/main.tf",
+      "Class": "config",
+      "Type": "terraform",
+      "MisconfSummary": {
+        "Successes": 6,
+        "Failures": 2,
+        "Exceptions": 0
+      },
+      "Misconfigurations": [
+        {
+          "Type": "Terraform Security Check",
+          "ID": "AVD-AWS-0028",
+          "AVDID": "AVD-AWS-0028",
+          "Title": "S3 Bucket does not have encryption enabled",
+          "Description": "S3 Buckets should be encrypted with customer managed KMS keys and not default AWS managed keys, in order to allow granular control over access to specific buckets.",
+          "Message": "Bucket does not have encryption enabled",
+          "Namespace": "builtin.aws.s3.aws0028",
+          "Query": "data..",
+          "Resolution": "Enable encryption using customer managed keys",
+          "Severity": "HIGH",
+          "PrimaryURL": "https://avd.aquasec.com/misconfig/avd-aws-0028",
+          "References": [
+            "https://avd.aquasec.com/misconfig/avd-aws-0028",
+            "https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-encryption.html"
+          ],
+          "Status": "FAIL",
+          "CauseMetadata": {
+            "Resource": "aws_s3_bucket.datalake_raw",
+            "Provider": "AWS",
+            "Service": "s3",
+            "StartLine": 12,
+            "EndLine": 15
+          }
+        },
+        {
+          "Type": "Terraform Security Check",
+          "ID": "AVD-AWS-0107",
+          "AVDID": "AVD-AWS-0107",
+          "Title": "An ingress security group rule allows traffic from /0",
+          "Description": "Opening up ports to the public internet is generally to be avoided. You should restrict access to IP addresses or ranges that explicitly require it where possible.",
+          "Message": "Security group rule allows ingress from public internet (0.0.0.0/0) to port 22",
+          "Namespace": "builtin.aws.ec2.aws0107",
+          "Query": "data..",
+          "Resolution": "Set a more restrictive CIDR range",
+          "Severity": "CRITICAL",
+          "PrimaryURL": "https://avd.aquasec.com/misconfig/avd-aws-0107",
+          "References": [
+            "https://avd.aquasec.com/misconfig/avd-aws-0107"
+          ],
+          "Status": "FAIL",
+          "CauseMetadata": {
+            "Resource": "aws_security_group.datalake_etl_sg",
+            "Provider": "AWS",
+            "Service": "ec2",
+            "StartLine": 40,
+            "EndLine": 48
+          }
+        }
+      ]
+    }
+  ]
+}
