@@ -5,7 +5,16 @@ from __future__ import annotations
 import hashlib
 import json
 
-from ascc.correlate.graph import TARGET_TAG, Chain, Edge, Graph, Node, build_graph, find_chains
+from ascc.correlate.graph import (
+    TARGET_TAG,
+    Chain,
+    Edge,
+    Graph,
+    Node,
+    build_graph,
+    chain_ids_by_key,
+    find_chains,
+)
 from ascc.correlate.run import CorrelationRun
 from ascc.schema.identity import MatchKey
 from ascc.schema.models import Finding
@@ -90,7 +99,7 @@ def _cluster_properties(finding: Finding, run: CorrelationRun) -> dict[str, list
     return properties
 
 
-def _result(finding: Finding, run: CorrelationRun) -> dict:
+def _result(finding: Finding, run: CorrelationRun, links: dict[str, tuple[str, ...]]) -> dict:
     level, _ = _LEVEL_BY_SEVERITY[finding.severity]
     resource_ids = sorted(finding.resource_ids)
     result: dict = {
@@ -103,7 +112,11 @@ def _result(finding: Finding, run: CorrelationRun) -> dict:
         ],
         "partialFingerprints": {FINGERPRINT_VERSION: fingerprint(finding)},
     }
-    properties = _cluster_properties(finding, run)
+    properties: dict[str, list[str]] = _cluster_properties(finding, run)
+    # CLAUDE.md, "Graph and chains (A2)", Chain links: omitted when empty.
+    chain_ids = sorted({cid for rid in finding.resource_ids for cid in links.get(rid, ())})
+    if chain_ids:
+        properties["chain_ids"] = chain_ids
     if properties:
         result["properties"] = properties
     return result
@@ -169,12 +182,17 @@ def graph_properties(run: CorrelationRun) -> dict:
     chains: every reported chain with its nodes and only its own edges.
     graph_stats: totals over the whole graph, so the edges left out of
     chains stay visible as a count. Confidences are rounded to 6 places
-    for stable bytes; results[] is never touched.
+    for stable bytes. No result is ever added for a chain; to_sarif links
+    existing results to chains through properties.chain_ids (A3-1b).
     """
     graph = build_graph(run)
+    return _graph_properties(graph, find_chains(graph))
+
+
+def _graph_properties(graph: Graph, chains: tuple[Chain, ...]) -> dict:
     nodes = {node.key: node for node in graph.nodes}
     return {
-        "chains": [_chain_properties(chain, nodes) for chain in find_chains(graph)],
+        "chains": [_chain_properties(chain, nodes) for chain in chains],
         "graph_stats": _graph_stats(graph),
     }
 
@@ -189,6 +207,9 @@ def to_sarif(run: CorrelationRun) -> dict:
     and fingerprint() is defined over that same tuple.
     """
     findings = [finding for scan_run in run.scan_runs for finding in scan_run.findings]
+    graph = build_graph(run)
+    chains = find_chains(graph)
+    links = chain_ids_by_key(graph, chains)
 
     rules: dict[str, dict] = {}
     results: list[tuple[str, str, str, dict]] = []
@@ -197,7 +218,7 @@ def to_sarif(run: CorrelationRun) -> dict:
         rules.setdefault(rule_id, _rule(finding))
         resource_ids = sorted(finding.resource_ids)
         sort_resource_id = resource_ids[0] if resource_ids else ""
-        results.append((rule_id, sort_resource_id, finding.title, _result(finding, run)))
+        results.append((rule_id, sort_resource_id, finding.title, _result(finding, run, links)))
 
     # CLAUDE.md, "Determinism": results[] sorted by (ruleId, resource_id, message).
     results.sort(key=lambda r: (r[0], r[1], r[2]))
@@ -214,7 +235,7 @@ def to_sarif(run: CorrelationRun) -> dict:
                     }
                 },
                 "results": [result for *_, result in results],
-                "properties": graph_properties(run),
+                "properties": _graph_properties(graph, chains),
             }
         ],
     }

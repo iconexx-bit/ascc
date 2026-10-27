@@ -129,8 +129,9 @@ chain's nodes. 5 of the 16 findings reach a chain node only through the
 identity bridge shown above — they sit on Trivy's keys
 `aws:ec2:instance:datalake-etl` and `aws:ec2:security-group:datalake-etl-sg`.
 Prowler's output alone yields the same chain (same `id`); without Prowler there
-is no chain. SARIF does not link `results[]` to chains yet — the join above is
-the reader's, done by member key.
+is no chain. The SARIF carries the same join: all 16 results carry
+`properties.chain_ids` = `["chain-c1786ed3ae49"]`, so a consumer filters by
+chain without redoing the join.
 
 **What 0.6 means.** It is the confidence that the path exists, not a risk
 score (scoring is on the roadmap). It comes from one heuristic edge:
@@ -167,6 +168,7 @@ CI for both the golden baseline and a live run (`tests/test_sarif_schema.py`).
 - cluster membership in `properties.cluster_members`
 - attack chains in `runs[0].properties.chains` and graph totals in
   `runs[0].properties.graph_stats` — never as extra `results[]`
+- the chains a result lies on in its `properties.chain_ids`
 - a stable `partialFingerprints["asccDedupKey/v1"]`, defined over resource identities
   alone — attaching cross-run history does not re-key existing findings, so re-running
   updates alerts in Code Scanning or DefectDojo instead of duplicating them

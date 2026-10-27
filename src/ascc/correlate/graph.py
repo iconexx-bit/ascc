@@ -317,3 +317,16 @@ def find_chains(graph: Graph) -> tuple[Chain, ...]:
         chains.append(Chain(id=f"chain-{digest}", nodes=seq, edges=path, confidence=confidence))
     chains.sort(key=lambda c: (-len(c.edges), tuple(map(str, c.nodes))))
     return tuple(chains)
+
+
+def chain_ids_by_key(graph: Graph, chains: tuple[Chain, ...]) -> dict[str, tuple[str, ...]]:
+    """Member key (as written in Finding.resource_ids) -> sorted ids of the
+    chains whose nodes contain it. A finding on any member belongs to the node,
+    so a finding lies on a chain iff one of its resource ids is a key here."""
+    nodes = {node.key: node for node in graph.nodes}
+    links: dict[str, set[str]] = {}
+    for chain in chains:
+        for key in chain.nodes:
+            for member in nodes[key].members:
+                links.setdefault(str(member), set()).add(chain.id)
+    return {key: tuple(sorted(ids)) for key, ids in sorted(links.items())}
