@@ -119,7 +119,11 @@ def test_chains_never_add_results(fixtures_dir: Path) -> None:
     findings = sum(len(scan_run.findings) for scan_run in run.scan_runs)
     sarif_run = to_sarif(run)["runs"][0]
     assert len(sarif_run["results"]) == findings
-    assert all("chain" not in json.dumps(r) for r in sarif_run["results"])
+    # A3-1b: a result may name its chains in properties.chain_ids, nowhere else.
+    for result in sarif_run["results"]:
+        properties = dict(result.get("properties", {}))
+        properties.pop("chain_ids", None)
+        assert "chain" not in json.dumps({**result, "properties": properties})
 
 
 def test_properties_are_plain_json(fixture_props: dict) -> None:
