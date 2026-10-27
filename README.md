@@ -50,6 +50,98 @@ arithmetic is printed, not hidden.
 Neither key is destroyed. Merging would discard the losing one, and the next scan
 that produces it would have nowhere to land.
 
+## From findings to an attack chain
+
+<!-- readme-demo:chain -->
+The same run builds a resource graph over those clusters and looks for paths
+from an internet-exposed entry to data tagged `DataClassification`:
+
+```console
+$ uv run ascc correlate --input fixtures/leaky_data_lake/ --output out.sarif.json
+…
+Attack chains: 1 (longest 3 hops, confidence 0.6)
+```
+
+**16 findings → 6 resource keys → 4 graph nodes → 1 chain of 3 hops.** The findings come from 3 scanners, and all 16 sit on the chain's nodes.
+
+The chain as exported in `runs[0].properties.chains[0]` — trimmed: `nodes`,
+`evidence` and `account_match` are left out; the full object is in
+[the golden SARIF](tests/data/leaky_data_lake.sarif.json):
+
+```json
+{
+  "id": "chain-c1786ed3ae49",
+  "hops": 3,
+  "confidence": 0.6,
+  "edges": [
+    {
+      "src": "aws:ec2:security-group:sg-0f9e8d7c6b5a43210",
+      "kind": "exposes",
+      "dst": "aws:ec2:instance:i-0a1b2c3d4e5f67890",
+      "method": "attached_security_group",
+      "confidence": 1.0,
+      "source": "prowler"
+    },
+    {
+      "src": "aws:ec2:instance:i-0a1b2c3d4e5f67890",
+      "kind": "assumes",
+      "dst": "aws:iam:role:datalake-etl-role",
+      "method": "profile_role_name",
+      "confidence": 0.6,
+      "source": "prowler"
+    },
+    {
+      "src": "aws:iam:role:datalake-etl-role",
+      "kind": "can_access",
+      "dst": "aws:s3:bucket:datalake-raw",
+      "method": "policy_wildcard",
+      "confidence": 1.0,
+      "source": "prowler",
+      "properties": {
+        "deny_check": "not_observed",
+        "unobserved_layers": ["bucket_policy", "permissions_boundary", "rcp", "scp"]
+      }
+    }
+  ]
+}
+```
+
+Chain confidence is the product of its edges, printed rather than hidden:
+**1.0 × 0.6 × 1.0 = 0.6**.
+
+Findings on each node — a finding on any member of a node's cluster belongs to
+the node, joined by `logicalLocations.fullyQualifiedName`:
+
+| Hop | Node | Members | Edge into it | Findings on the node |
+|---|---|---|---|---|
+| 0 | `aws:ec2:security-group:sg-0f9e8d7c6b5a43210` (entry) | 2 | — | prowler 1 · trivy 1 |
+| 1 | `aws:ec2:instance:i-0a1b2c3d4e5f67890` | 2 | `exposes` · `attached_security_group` · 1.0 | prowler 1 · trivy 4 |
+| 2 | `aws:iam:role:datalake-etl-role` | 1 | `assumes` · `profile_role_name` · 0.6 | checkov 1 · prowler 1 |
+| 3 | `aws:s3:bucket:datalake-raw` (target, `PII`) | 1 | `can_access` · `policy_wildcard` · 1.0 | checkov 3 · prowler 3 · trivy 1 |
+
+The instance node is where Trivy's `CVE-2021-44228` (Log4Shell) lands: internet
+→ open security group → public instance with an RCE → over-privileged role →
+PII bucket.
+
+**Which scanner supplied what.** All 3 edges come from Prowler data
+(`source: prowler`). Trivy and Checkov add no edges; they add findings on the
+chain's nodes. 5 of the 16 findings reach a chain node only through the
+identity bridge shown above — they sit on Trivy's keys
+`aws:ec2:instance:datalake-etl` and `aws:ec2:security-group:datalake-etl-sg`.
+Prowler's output alone yields the same chain (same `id`); without Prowler there
+is no chain. SARIF does not link `results[]` to chains yet — the join above is
+the reader's, done by member key.
+
+**What 0.6 means.** It is the confidence that the path exists, not a risk
+score (scoring is on the roadmap). It comes from one heuristic edge:
+`profile_role_name` links the instance to the role because the instance
+profile carries the role's name — the AWS console names them that way,
+Terraform does not have to. The `can_access` edge is a wildcard inline policy
+(`*` on `*`), but no deny layer was observed: `deny_check: not_observed` and
+`unobserved_layers` say so instead of claiming access. That list is not
+exhaustive — KMS key policies and VPC endpoint policies are not checked either.
+<!-- /readme-demo:chain -->
+
 ## Determinism is a contract
 
 - `results[]` sorted in product code by `(ruleId, resource_id, message)` — ordering is
@@ -73,6 +165,8 @@ CI for both the golden baseline and a live run (`tests/test_sarif_schema.py`).
 - resource identity in `logicalLocations.fullyQualifiedName`
   (`aws:ec2:instance:i-0a1b2c3d4e5f67890`)
 - cluster membership in `properties.cluster_members`
+- attack chains in `runs[0].properties.chains` and graph totals in
+  `runs[0].properties.graph_stats` — never as extra `results[]`
 - a stable `partialFingerprints["asccDedupKey/v1"]`, defined over resource identities
   alone — attaching cross-run history does not re-key existing findings, so re-running
   updates alerts in Code Scanning or DefectDojo instead of duplicating them
@@ -142,8 +236,8 @@ ingest -> correlate -> [export]
 | `schema/` | Identity resolution with provenance (`MatchKey`, `resolve()`), cluster bridging (`BridgeFact`, `ResourceCluster`) |
 | `ingest/` | Trivy, Prowler, Checkov parsers behind a common `ScannerParser` interface, plus a `sniff()`-based registry dispatcher |
 | `store/` | `FactRepository` with in-memory and JSONL backends; TTL marks facts stale, never deletes; `--store PATH` adds cross-run cluster and ghost membership to SARIF; a store in another format version, or with a corrupt line before the last, is refused with exit code 70 and nothing is written |
-| `correlate/` | `build_clusters()` → `ResourceCluster` (Union-Find clustering, `bridge.py`) + `CorrelationRun` (tag-conflict resolution, `effective_confidence()`, `run.py`) |
-| `export/` | `to_sarif()` — SARIF 2.1.0, deterministic result ordering, `--output PATH` with atomic write |
+| `correlate/` | `build_clusters()` → `ResourceCluster` (Union-Find clustering, `bridge.py`) + `CorrelationRun` (tag-conflict resolution, `effective_confidence()`, `run.py`); `build_graph()` + `find_chains()` → attack graph and entry-to-target chains (`graph.py`) |
+| `export/` | `to_sarif()` — SARIF 2.1.0, deterministic result ordering, `--output PATH` with atomic write; chains and graph stats in `runs[0].properties` |
 
 CI runs lint, format check and tests (including byte-level determinism and SARIF
 schema validation), plus a separate `secrets-scan` job (gitleaks). Locally, the git hook
@@ -151,7 +245,6 @@ in `.githooks/pre-commit` checks lock and venv drift and runs ruff; gitleaks run
 
 ## Roadmap
 
-- Resource graph and attack-chain detection, exported in SARIF `properties`
 - Deterministic risk score with MITRE ATT&CK mapping
 - PostgreSQL backend behind `FactRepository`
 
