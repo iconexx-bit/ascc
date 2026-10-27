@@ -13,6 +13,7 @@ from ascc.correlate.history import facts_to_bridge_facts
 from ascc.correlate.run import correlate as run_correlate
 from ascc.correlate.run import effective_confidence
 from ascc.export.sarif import graph_properties, to_sarif
+from ascc.ingest.clab import ClabFormatError
 from ascc.ingest.registry import parser_for
 from ascc.schema.models import BridgeFact, ScanRun
 from ascc.store import Fact, JsonlFactRepository, StoreFormatError
@@ -97,7 +98,7 @@ def correlate(
         exists=True,
         file_okay=False,
         dir_okay=True,
-        help="Path to a directory of scanner fixtures (Trivy/Prowler/Checkov JSON).",
+        help="Directory of scanner files (Trivy/Prowler/Checkov JSON, containment lab clab/v1).",
     ),
     output: Path | None = typer.Option(
         None,
@@ -131,7 +132,13 @@ def correlate(
         if parser_cls is None:
             skipped.append((file.name, "unrecognized format"))
             continue
-        scan_runs.append(parser_cls().parse(file))
+        try:
+            scan_runs.append(parser_cls().parse(file))
+        except ClabFormatError as exc:
+            # A recognised lab file that breaks clab/v1 is refused, not read
+            # loosely: nothing is written (CLAUDE.md, "Runtime evidence (A3)").
+            typer.echo(f"Invalid {file.name}: {exc}", err=True)
+            raise typer.Exit(code=ExitCode.INTERNAL) from None
 
     if not scan_runs:
         console.print(f"[red]No recognized scanner files in[/red] {input}")
@@ -284,7 +291,8 @@ def correlate(
             conflicts_table.add_row(str(conflict.resource_key), conflict.tag_key, values)
         console.print(conflicts_table)
 
-    chains = graph_properties(correlation_run)["chains"]
+    graph_props = graph_properties(correlation_run)
+    chains = graph_props["chains"]
     if chains:
         top = chains[0]  # longest first (CLAUDE.md, "Graph and chains (A2)")
         console.print(
@@ -293,6 +301,14 @@ def correlate(
         )
     else:
         console.print("Attack chains: 0")
+
+    evidence = graph_props["graph_stats"].get("evidence")
+    if evidence:
+        console.print(
+            f"Runtime evidence: {evidence['total']} "
+            f"({evidence['verified']} verified, {evidence['not_verified']} not verified; "
+            f"{evidence['on_chain_nodes']} on chain nodes; binding declared, not observed)"
+        )
 
 
 if __name__ == "__main__":

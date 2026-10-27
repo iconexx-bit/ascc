@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
 
     from ascc.correlate.run import CorrelationRun
+    from ascc.schema.models import Evidence
 
 # Relation methods and their confidence. Identity facts live in
 # ascc.store.policy.MAX_CONFIDENCE; the two tables never mix.
@@ -46,6 +47,8 @@ class Node:
     accounts: frozenset[str]
     tags: Mapping[str, str]
     entry_findings: tuple[str, ...]
+    # Runtime evidence on any member (CLAUDE.md, "Runtime evidence (A3)"), sorted.
+    evidence: tuple[Evidence, ...] = ()
 
     @property
     def is_entry(self) -> bool:
@@ -117,6 +120,13 @@ def build_graph(run: CorrelationRun) -> Graph:
                 if finding.category is Category.NETWORK_EXPOSURE:
                     entries[rep].add(f"{finding.scanner}:{finding.rule_id}")
 
+    evidence: dict[MatchKey, list[Evidence]] = {rep: [] for rep in members}
+    for scan in run.scan_runs:
+        for item in scan.evidence:
+            key = by_str.get(item.resource_id)
+            if key is not None and key in node_of:
+                evidence[node_of[key]].append(item)
+
     nodes: dict[MatchKey, Node] = {}
     for rep in sorted(members, key=_sort_key):
         nodes[rep] = Node(
@@ -125,6 +135,9 @@ def build_graph(run: CorrelationRun) -> Graph:
             accounts=frozenset(accounts[rep]),
             tags=MappingProxyType(_merged_tags(run, members[rep])),
             entry_findings=tuple(sorted(entries[rep])),
+            evidence=tuple(
+                sorted(evidence[rep], key=lambda e: (e.scanner, e.rule_id, e.resource_id))
+            ),
         )
 
     edges: dict[tuple[str, str, str, str], Edge] = {}

@@ -1,0 +1,783 @@
+{
+  "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
+  "runs": [
+    {
+      "properties": {
+        "chains": [
+          {
+            "confidence": 0.6,
+            "edges": [
+              {
+                "confidence": 1.0,
+                "dst": "aws:ec2:instance:i-0a1b2c3d4e5f67890",
+                "evidence": "arn:aws:ec2:us-east-1:123456789012:instance/i-0a1b2c3d4e5f67890 security_groups=sg-0f9e8d7c6b5a43210",
+                "kind": "exposes",
+                "method": "attached_security_group",
+                "properties": {},
+                "source": "prowler",
+                "src": "aws:ec2:security-group:sg-0f9e8d7c6b5a43210"
+              },
+              {
+                "confidence": 0.6,
+                "dst": "aws:iam:role:datalake-etl-role",
+                "evidence": "arn:aws:iam::123456789012:instance-profile/datalake-etl-role name=datalake-etl-role",
+                "kind": "assumes",
+                "method": "profile_role_name",
+                "properties": {},
+                "source": "prowler",
+                "src": "aws:ec2:instance:i-0a1b2c3d4e5f67890"
+              },
+              {
+                "confidence": 1.0,
+                "dst": "aws:s3:bucket:datalake-raw",
+                "evidence": "arn:aws:iam::123456789012:role/datalake-etl-role inline_policy actions=* resources=*",
+                "kind": "can_access",
+                "method": "policy_wildcard",
+                "properties": {
+                  "account_match": "same",
+                  "deny_check": "not_observed",
+                  "unobserved_layers": [
+                    "bucket_policy",
+                    "permissions_boundary",
+                    "rcp",
+                    "scp"
+                  ]
+                },
+                "source": "prowler",
+                "src": "aws:iam:role:datalake-etl-role"
+              }
+            ],
+            "hops": 3,
+            "id": "chain-c1786ed3ae49",
+            "nodes": [
+              {
+                "accounts": [
+                  "123456789012"
+                ],
+                "entry_findings": [
+                  "prowler:ec2_securitygroup_allow_ingress_from_internet_to_port_22",
+                  "trivy:AVD-AWS-0107"
+                ],
+                "key": "aws:ec2:security-group:sg-0f9e8d7c6b5a43210",
+                "members": [
+                  "aws:ec2:security-group:datalake-etl-sg",
+                  "aws:ec2:security-group:sg-0f9e8d7c6b5a43210"
+                ]
+              },
+              {
+                "accounts": [
+                  "123456789012"
+                ],
+                "entry_findings": [
+                  "prowler:ec2_instance_public_ip"
+                ],
+                "evidence": [
+                  {
+                    "binding": {
+                      "confidence": 0.5,
+                      "method": "operator_declared"
+                    },
+                    "control": "canaries",
+                    "message": "canaries_present: pass — all present: svc-legacy backup-admin ctf-canary",
+                    "provenance": {
+                      "probe_sha256": "18b74eb6d37c9b41b4d6759283e9ab783fce839fedb48d4ae4af4b95ad2870ad",
+                      "probe_ts": "2026-10-27T05:08:35Z",
+                      "ttc_sha256": "07b14be1b05f75ccc94c22b82f86caa4692c8b2c58e5b467c9e5024005f4ead0",
+                      "verdict": "PASS"
+                    },
+                    "resource": "aws:ec2:instance:i-0a1b2c3d4e5f67890",
+                    "rule_id": "CLAB-CANARY-001",
+                    "source": "clab",
+                    "status": "verified"
+                  },
+                  {
+                    "binding": {
+                      "confidence": 0.5,
+                      "method": "operator_declared"
+                    },
+                    "control": "egress",
+                    "message": "egress_blocked: pass — rc_ip=7 rc_dns=7 (blocked set: 6,7,28)",
+                    "provenance": {
+                      "probe_sha256": "18b74eb6d37c9b41b4d6759283e9ab783fce839fedb48d4ae4af4b95ad2870ad",
+                      "probe_ts": "2026-10-27T05:08:35Z",
+                      "ttc_sha256": "07b14be1b05f75ccc94c22b82f86caa4692c8b2c58e5b467c9e5024005f4ead0",
+                      "verdict": "PASS"
+                    },
+                    "resource": "aws:ec2:instance:i-0a1b2c3d4e5f67890",
+                    "rule_id": "CLAB-EGRESS-001",
+                    "source": "clab",
+                    "status": "verified"
+                  },
+                  {
+                    "binding": {
+                      "confidence": 0.5,
+                      "method": "operator_declared"
+                    },
+                    "control": "sigma",
+                    "message": "sigma_loaded: pass — present=8 expected=8 range=100200-100299",
+                    "provenance": {
+                      "probe_sha256": "18b74eb6d37c9b41b4d6759283e9ab783fce839fedb48d4ae4af4b95ad2870ad",
+                      "probe_ts": "2026-10-27T05:08:35Z",
+                      "ttc_sha256": "07b14be1b05f75ccc94c22b82f86caa4692c8b2c58e5b467c9e5024005f4ead0",
+                      "verdict": "PASS"
+                    },
+                    "resource": "aws:ec2:instance:i-0a1b2c3d4e5f67890",
+                    "rule_id": "CLAB-SIGMA-001",
+                    "source": "clab",
+                    "status": "verified"
+                  },
+                  {
+                    "binding": {
+                      "confidence": 0.5,
+                      "method": "operator_declared"
+                    },
+                    "control": "sim_ca",
+                    "message": "sim_ca_present: pass — pem-header ok sha256=07d47afcee023a84e47ccecbbe594ea6e2b047e7818ababd3636098da3fc5951 (no openssl CLI in image)",
+                    "provenance": {
+                      "probe_sha256": "18b74eb6d37c9b41b4d6759283e9ab783fce839fedb48d4ae4af4b95ad2870ad",
+                      "probe_ts": "2026-10-27T05:08:35Z",
+                      "ttc_sha256": "07b14be1b05f75ccc94c22b82f86caa4692c8b2c58e5b467c9e5024005f4ead0",
+                      "verdict": "PASS"
+                    },
+                    "resource": "aws:ec2:instance:i-0a1b2c3d4e5f67890",
+                    "rule_id": "CLAB-SIMCA-001",
+                    "source": "clab",
+                    "status": "verified"
+                  },
+                  {
+                    "binding": {
+                      "confidence": 0.5,
+                      "method": "operator_declared"
+                    },
+                    "control": "tripwire",
+                    "message": "tripwire_sinkholed: pass — canary.tripwire-range.invalid sinkholed -> ::",
+                    "provenance": {
+                      "probe_sha256": "18b74eb6d37c9b41b4d6759283e9ab783fce839fedb48d4ae4af4b95ad2870ad",
+                      "probe_ts": "2026-10-27T05:08:35Z",
+                      "ttc_sha256": "07b14be1b05f75ccc94c22b82f86caa4692c8b2c58e5b467c9e5024005f4ead0",
+                      "verdict": "PASS"
+                    },
+                    "resource": "aws:ec2:instance:i-0a1b2c3d4e5f67890",
+                    "rule_id": "CLAB-TRIPWIRE-001",
+                    "source": "clab",
+                    "status": "verified"
+                  },
+                  {
+                    "binding": {
+                      "confidence": 0.5,
+                      "method": "operator_declared"
+                    },
+                    "control": "ttc",
+                    "message": "TTC median 1598 ms (min 1568, max 1687); 5 of 5 cycles under 60000 ms, 5 completed",
+                    "provenance": {
+                      "probe_sha256": "18b74eb6d37c9b41b4d6759283e9ab783fce839fedb48d4ae4af4b95ad2870ad",
+                      "probe_ts": "2026-10-27T05:08:35Z",
+                      "ttc_sha256": "07b14be1b05f75ccc94c22b82f86caa4692c8b2c58e5b467c9e5024005f4ead0",
+                      "verdict": "PASS"
+                    },
+                    "resource": "aws:ec2:instance:i-0a1b2c3d4e5f67890",
+                    "rule_id": "CLAB-TTC-001",
+                    "source": "clab",
+                    "status": "verified"
+                  }
+                ],
+                "key": "aws:ec2:instance:i-0a1b2c3d4e5f67890",
+                "members": [
+                  "aws:ec2:instance:datalake-etl",
+                  "aws:ec2:instance:i-0a1b2c3d4e5f67890"
+                ]
+              },
+              {
+                "accounts": [
+                  "123456789012"
+                ],
+                "entry_findings": [],
+                "key": "aws:iam:role:datalake-etl-role",
+                "members": [
+                  "aws:iam:role:datalake-etl-role"
+                ]
+              },
+              {
+                "accounts": [
+                  "123456789012"
+                ],
+                "data_classification": "PII",
+                "entry_findings": [],
+                "key": "aws:s3:bucket:datalake-raw",
+                "members": [
+                  "aws:s3:bucket:datalake-raw"
+                ]
+              }
+            ]
+          }
+        ],
+        "graph_stats": {
+          "dropped_edges": 0,
+          "edges": 5,
+          "edges_by_kind": {
+            "assumes": 1,
+            "can_access": 3,
+            "exposes": 1
+          },
+          "evidence": {
+            "not_verified": 0,
+            "on_chain_nodes": 6,
+            "total": 6,
+            "verified": 6
+          },
+          "nodes": 4
+        }
+      },
+      "results": [
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "aws:s3:bucket:datalake-raw"
+                }
+              ]
+            }
+          ],
+          "message": {
+            "text": "Ensure the S3 bucket has access logging enabled"
+          },
+          "partialFingerprints": {
+            "asccDedupKey/v1": "f63f40f2632310dea5f3a2f225af1b00df7b80dd387b5258a001deee5a6fcd86"
+          },
+          "properties": {
+            "chain_ids": [
+              "chain-c1786ed3ae49"
+            ]
+          },
+          "ruleId": "checkov/CKV_AWS_18"
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "aws:s3:bucket:datalake-raw"
+                }
+              ]
+            }
+          ],
+          "message": {
+            "text": "Ensure all data stored in the S3 bucket is securely encrypted at rest"
+          },
+          "partialFingerprints": {
+            "asccDedupKey/v1": "94b84ca1b9debcaee109264a46d87e1db0a825204f4f01a6e2e434cfca82d7a6"
+          },
+          "properties": {
+            "chain_ids": [
+              "chain-c1786ed3ae49"
+            ]
+          },
+          "ruleId": "checkov/CKV_AWS_19"
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "aws:s3:bucket:datalake-raw"
+                }
+              ]
+            }
+          ],
+          "message": {
+            "text": "S3 Bucket has an ACL defined which allows public READ access."
+          },
+          "partialFingerprints": {
+            "asccDedupKey/v1": "4a38d252d616a157eed0aac991b9f5e57fbf972682de6c09f68d10e85dfaef16"
+          },
+          "properties": {
+            "chain_ids": [
+              "chain-c1786ed3ae49"
+            ]
+          },
+          "ruleId": "checkov/CKV_AWS_20"
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "aws:iam:role:datalake-etl-role"
+                }
+              ]
+            }
+          ],
+          "message": {
+            "text": "Ensure IAM policies that allow full \"*-*\" administrative privileges are not created"
+          },
+          "partialFingerprints": {
+            "asccDedupKey/v1": "7503802cdcdd7bcfb5276a9d005165b1fcf32dead52c09307fdc3308d4ca5eb1"
+          },
+          "properties": {
+            "chain_ids": [
+              "chain-c1786ed3ae49"
+            ]
+          },
+          "ruleId": "checkov/CKV_AWS_40"
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "aws:ec2:instance:i-0a1b2c3d4e5f67890"
+                }
+              ]
+            }
+          ],
+          "message": {
+            "text": "EC2 instance datalake-etl is publicly reachable"
+          },
+          "partialFingerprints": {
+            "asccDedupKey/v1": "56e91f4ba877e0b8c83573b16defa08a1a65407d07d851a500c1274aa6662236"
+          },
+          "properties": {
+            "chain_ids": [
+              "chain-c1786ed3ae49"
+            ],
+            "cluster_members": [
+              "aws:ec2:instance:datalake-etl",
+              "aws:ec2:instance:i-0a1b2c3d4e5f67890"
+            ]
+          },
+          "ruleId": "prowler/ec2_instance_public_ip"
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "aws:ec2:security-group:sg-0f9e8d7c6b5a43210"
+                }
+              ]
+            }
+          ],
+          "message": {
+            "text": "Security group datalake-etl-sg allows SSH from the internet"
+          },
+          "partialFingerprints": {
+            "asccDedupKey/v1": "b198af1fb199fdb8a7aaa8462af6d4c2095c04ad0a3ddf2798470285042a26ef"
+          },
+          "properties": {
+            "chain_ids": [
+              "chain-c1786ed3ae49"
+            ],
+            "cluster_members": [
+              "aws:ec2:security-group:datalake-etl-sg",
+              "aws:ec2:security-group:sg-0f9e8d7c6b5a43210"
+            ]
+          },
+          "ruleId": "prowler/ec2_securitygroup_allow_ingress_from_internet_to_port_22"
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "aws:iam:role:datalake-etl-role"
+                }
+              ]
+            }
+          ],
+          "message": {
+            "text": "IAM Role datalake-etl-role allows full administrative privileges"
+          },
+          "partialFingerprints": {
+            "asccDedupKey/v1": "709ba00b9e18f60582accbf473b3ff734f50b8fc46cb88fd2781ccfb50f8b46d"
+          },
+          "properties": {
+            "chain_ids": [
+              "chain-c1786ed3ae49"
+            ]
+          },
+          "ruleId": "prowler/iam_inline_policy_no_administrative_privileges"
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "aws:s3:bucket:datalake-raw"
+                }
+              ]
+            }
+          ],
+          "message": {
+            "text": "S3 Bucket datalake-raw does not have default encryption enabled"
+          },
+          "partialFingerprints": {
+            "asccDedupKey/v1": "4a7bf614b7d7066b87f678ab0c113e12349785aea43194c7f0a2fd07ed76e732"
+          },
+          "properties": {
+            "chain_ids": [
+              "chain-c1786ed3ae49"
+            ]
+          },
+          "ruleId": "prowler/s3_bucket_default_encryption"
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "aws:s3:bucket:datalake-raw"
+                }
+              ]
+            }
+          ],
+          "message": {
+            "text": "S3 Bucket datalake-raw allows public read access"
+          },
+          "partialFingerprints": {
+            "asccDedupKey/v1": "c67765ab5887af93e11b92d5310d9bd6f9603bf1af8d251a11a25c18192de140"
+          },
+          "properties": {
+            "chain_ids": [
+              "chain-c1786ed3ae49"
+            ]
+          },
+          "ruleId": "prowler/s3_bucket_level_public_access_block"
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "aws:s3:bucket:datalake-raw"
+                }
+              ]
+            }
+          ],
+          "message": {
+            "text": "S3 Bucket datalake-raw does not have access logging enabled"
+          },
+          "partialFingerprints": {
+            "asccDedupKey/v1": "1e74d3ad29290d509364a7279f2e37ee650c1fd3e032c2bda421a9778cb603f4"
+          },
+          "properties": {
+            "chain_ids": [
+              "chain-c1786ed3ae49"
+            ]
+          },
+          "ruleId": "prowler/s3_bucket_server_access_logging_enabled"
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "aws:s3:bucket:datalake-raw"
+                }
+              ]
+            }
+          ],
+          "message": {
+            "text": "S3 Bucket does not have encryption enabled"
+          },
+          "partialFingerprints": {
+            "asccDedupKey/v1": "ce57efdffc16360a09e6d95164a194d346a84d80dcfb16cf6b18e9a7973608ba"
+          },
+          "properties": {
+            "chain_ids": [
+              "chain-c1786ed3ae49"
+            ]
+          },
+          "ruleId": "trivy/AVD-AWS-0028"
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "aws:ec2:security-group:datalake-etl-sg"
+                }
+              ]
+            }
+          ],
+          "message": {
+            "text": "An ingress security group rule allows traffic from /0"
+          },
+          "partialFingerprints": {
+            "asccDedupKey/v1": "0d3f6ba05b3642d2d5c57cc900d96e034cf74f6005fa4000956ef828c842f4ed"
+          },
+          "properties": {
+            "chain_ids": [
+              "chain-c1786ed3ae49"
+            ],
+            "cluster_members": [
+              "aws:ec2:security-group:datalake-etl-sg",
+              "aws:ec2:security-group:sg-0f9e8d7c6b5a43210"
+            ]
+          },
+          "ruleId": "trivy/AVD-AWS-0107"
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "aws:ec2:instance:datalake-etl"
+                }
+              ]
+            }
+          ],
+          "message": {
+            "text": "log4j-core: Remote code execution in Log4j2 when message lookup substitution is enabled (Log4Shell)"
+          },
+          "partialFingerprints": {
+            "asccDedupKey/v1": "48299bdb8bab4b92d9ba0ae7607edbd8c7c444b5873ea35b544c04f930ed9d22"
+          },
+          "properties": {
+            "chain_ids": [
+              "chain-c1786ed3ae49"
+            ],
+            "cluster_members": [
+              "aws:ec2:instance:datalake-etl",
+              "aws:ec2:instance:i-0a1b2c3d4e5f67890"
+            ]
+          },
+          "ruleId": "trivy/CVE-2021-44228"
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "aws:ec2:instance:datalake-etl"
+                }
+              ]
+            }
+          ],
+          "message": {
+            "text": "openssl: X.509 Email Address 4-byte Buffer Overflow"
+          },
+          "partialFingerprints": {
+            "asccDedupKey/v1": "2d558e6643266c0ff544a4d7d52caeeb7145a7faf69fe792463da603bb604714"
+          },
+          "properties": {
+            "chain_ids": [
+              "chain-c1786ed3ae49"
+            ],
+            "cluster_members": [
+              "aws:ec2:instance:datalake-etl",
+              "aws:ec2:instance:i-0a1b2c3d4e5f67890"
+            ]
+          },
+          "ruleId": "trivy/CVE-2022-3602"
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "aws:ec2:instance:datalake-etl"
+                }
+              ]
+            }
+          ],
+          "message": {
+            "text": "commons-text: variable interpolation RCE (Text4Shell)"
+          },
+          "partialFingerprints": {
+            "asccDedupKey/v1": "a01ce727f2c9a2c47f2d78a871727079502cbcd8d3a5383a62239c5128cc192e"
+          },
+          "properties": {
+            "chain_ids": [
+              "chain-c1786ed3ae49"
+            ],
+            "cluster_members": [
+              "aws:ec2:instance:datalake-etl",
+              "aws:ec2:instance:i-0a1b2c3d4e5f67890"
+            ]
+          },
+          "ruleId": "trivy/CVE-2022-42889"
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "aws:ec2:instance:datalake-etl"
+                }
+              ]
+            }
+          ],
+          "message": {
+            "text": "curl: SOCKS5 heap buffer overflow"
+          },
+          "partialFingerprints": {
+            "asccDedupKey/v1": "85ca043bc98e74524d7e15b8cea57ad5dbe65286bf4f6763a36fbae0d2e8f63d"
+          },
+          "properties": {
+            "chain_ids": [
+              "chain-c1786ed3ae49"
+            ],
+            "cluster_members": [
+              "aws:ec2:instance:datalake-etl",
+              "aws:ec2:instance:i-0a1b2c3d4e5f67890"
+            ]
+          },
+          "ruleId": "trivy/CVE-2023-38545"
+        }
+      ],
+      "tool": {
+        "driver": {
+          "name": "ASCC",
+          "rules": [
+            {
+              "id": "checkov/CKV_AWS_18",
+              "properties": {
+                "ascc/category": "logging_disabled",
+                "ascc/level": "warning",
+                "security-severity": "5.5"
+              }
+            },
+            {
+              "id": "checkov/CKV_AWS_19",
+              "properties": {
+                "ascc/category": "encryption_at_rest",
+                "ascc/level": "error",
+                "security-severity": "8.0"
+              }
+            },
+            {
+              "id": "checkov/CKV_AWS_20",
+              "properties": {
+                "ascc/category": "public_access",
+                "ascc/level": "error",
+                "security-severity": "8.0"
+              }
+            },
+            {
+              "id": "checkov/CKV_AWS_40",
+              "properties": {
+                "ascc/category": "excessive_privilege",
+                "ascc/level": "error",
+                "security-severity": "9.5"
+              }
+            },
+            {
+              "id": "prowler/ec2_instance_public_ip",
+              "properties": {
+                "ascc/category": "network_exposure",
+                "ascc/level": "warning",
+                "security-severity": "5.5"
+              }
+            },
+            {
+              "id": "prowler/ec2_securitygroup_allow_ingress_from_internet_to_port_22",
+              "properties": {
+                "ascc/category": "network_exposure",
+                "ascc/level": "error",
+                "security-severity": "9.5"
+              }
+            },
+            {
+              "id": "prowler/iam_inline_policy_no_administrative_privileges",
+              "properties": {
+                "ascc/category": "excessive_privilege",
+                "ascc/level": "error",
+                "security-severity": "9.5"
+              }
+            },
+            {
+              "id": "prowler/s3_bucket_default_encryption",
+              "properties": {
+                "ascc/category": "encryption_at_rest",
+                "ascc/level": "error",
+                "security-severity": "8.0"
+              }
+            },
+            {
+              "id": "prowler/s3_bucket_level_public_access_block",
+              "properties": {
+                "ascc/category": "public_access",
+                "ascc/level": "error",
+                "security-severity": "9.5"
+              }
+            },
+            {
+              "id": "prowler/s3_bucket_server_access_logging_enabled",
+              "properties": {
+                "ascc/category": "logging_disabled",
+                "ascc/level": "warning",
+                "security-severity": "5.5"
+              }
+            },
+            {
+              "id": "trivy/AVD-AWS-0028",
+              "properties": {
+                "ascc/category": "encryption_at_rest",
+                "ascc/level": "error",
+                "security-severity": "8.0"
+              }
+            },
+            {
+              "id": "trivy/AVD-AWS-0107",
+              "properties": {
+                "ascc/category": "network_exposure",
+                "ascc/level": "error",
+                "security-severity": "9.5"
+              }
+            },
+            {
+              "id": "trivy/CVE-2021-44228",
+              "properties": {
+                "ascc/category": "vulnerability",
+                "ascc/level": "error",
+                "security-severity": "9.5"
+              }
+            },
+            {
+              "id": "trivy/CVE-2022-3602",
+              "properties": {
+                "ascc/category": "vulnerability",
+                "ascc/level": "error",
+                "security-severity": "8.0"
+              }
+            },
+            {
+              "id": "trivy/CVE-2022-42889",
+              "properties": {
+                "ascc/category": "vulnerability",
+                "ascc/level": "error",
+                "security-severity": "8.0"
+              }
+            },
+            {
+              "id": "trivy/CVE-2023-38545",
+              "properties": {
+                "ascc/category": "vulnerability",
+                "ascc/level": "warning",
+                "security-severity": "5.5"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "version": "2.1.0"
+}

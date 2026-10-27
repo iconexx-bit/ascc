@@ -39,6 +39,20 @@ class Severity(IntEnum):
             6: cls.CRITICAL,
         }.get(severity_id, cls.INFO)
 
+    @classmethod
+    def from_security_severity(cls, score: float) -> Severity:
+        # GitHub code scanning bands for rule properties["security-severity"]
+        # (0.0-10.0, CVSS-like): >= 9 critical, >= 7 high, >= 4 medium, > 0 low.
+        if score >= 9.0:
+            return cls.CRITICAL
+        if score >= 7.0:
+            return cls.HIGH
+        if score >= 4.0:
+            return cls.MEDIUM
+        if score > 0.0:
+            return cls.LOW
+        return cls.INFO
+
 
 class Category(StrEnum):
     """Кросс-сканерная категория. Основа для ASCC-CORR-010.
@@ -55,4 +69,5 @@ class Category(StrEnum):
     EXCESSIVE_PRIVILEGE = "excessive_privilege"
     VULNERABILITY = "vulnerability"
     DATA_CLASSIFICATION = "data_classification"
+    CONTAINMENT = "containment"  # runtime containment control violated (clab); never an entry
     UNCATEGORIZED = "uncategorized"

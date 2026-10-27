@@ -6,8 +6,10 @@ double-counting — letting TTL vary with a method's trust — is forbidden.
 
 Method literals and confidence ceilings are ground truth from
 src/ascc/schema/identity.py (arn_parse, terraform_*, filesystem_path_heuristic)
-and src/ascc/ingest/prowler.py (observed_together). "llm" is a forward
-contract: no producer exists yet, capped at 0.3 per the documented invariant.
+and src/ascc/ingest/prowler.py (observed_together), src/ascc/ingest/clab.py
+(operator_declared: a resource the operator names, never observed; run_bound,
+superseded by the next lab run). "llm" is a forward contract: no producer
+exists yet, capped at 0.3 per the documented invariant.
 
 Pure, stdlib-only. No imports from anywhere else in ascc.
 """
@@ -33,6 +35,7 @@ TTL: dict[str, timedelta | None] = {
     "filesystem_path_heuristic": _THIRTY_DAYS,
     "observed_together": _SEVEN_DAYS,
     "llm": _THIRTY_DAYS,
+    "operator_declared": _SEVEN_DAYS,
 }
 
 MAX_CONFIDENCE: dict[str, float] = {
@@ -42,6 +45,7 @@ MAX_CONFIDENCE: dict[str, float] = {
     "filesystem_path_heuristic": 0.5,
     "observed_together": 0.95,
     "llm": 0.3,
+    "operator_declared": 0.5,
 }
 
 
