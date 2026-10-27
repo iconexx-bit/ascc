@@ -3,6 +3,25 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- Attack graph and chains (`ascc.correlate.graph`): nodes are identity
+  clusters; edges come only from scanner data (`exposes`, `assumes`,
+  `can_access`), each with a method and a confidence; a chain runs from a
+  network-exposed entry to a node tagged `DataClassification`, and its
+  confidence is the product of its edges.
+- SARIF: chains in `runs[0].properties.chains`, graph totals in
+  `runs[0].properties.graph_stats`; `results[]` is unchanged. The CLI prints
+  `Attack chains: N (longest H hops, confidence C)`.
+
+### Documentation
+
+- README: the chain demo on `leaky_data_lake`, with per-hop provenance;
+  every number in it is checked against the golden SARIF by
+  `tests/test_readme_demo.py`.
+
 ## [0.1.1] — 2026-10-26
 
 ### Fixed
