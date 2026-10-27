@@ -482,6 +482,10 @@ while it held.
   invariant: no LLM code exists yet; it becomes a CI gate together with the AI layer.
 - SARIF output validates against the official 2.1.0 schema, golden and live run
   (tests/test_sarif_schema.py).
+- SARIF `$schema` = the OASIS errata01 URI
+  (https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json), the id the
+  published schema gives itself; the raw.githubusercontent sarif-spec/master/Schemata path is gone upstream
+  since 2024-05-02 (tests/test_sarif_schema_uri.py). Validation never fetches it (tests/schemas/).
 - results[] sorted in product code by (ruleId, resource_id, message).
 
 ## Scoring
