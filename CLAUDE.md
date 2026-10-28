@@ -838,6 +838,10 @@ Gate: tests/test_clab.py.
 - Fixture fixtures/leaky_data_lake_contained/ = the three leaky_data_lake files
   byte for byte + clab.sarif.json from a live lab run (2026-10-27, lab 4dcf8f5,
   sha256 pinned in the test). Golden: tests/data/leaky_data_lake_contained.sarif.json.
+- README (A3-I4): one block between `<!-- readme-demo:evidence -->` and
+  `<!-- /readme-demo:evidence -->`; every row, count and claim is a projection of
+  the contained golden, one live CLI run or the fixture's provenance README, and
+  it says the binding is declared, not observed (gate: tests/test_readme_evidence.py).
 
 ## Kubernetes
 
