@@ -21,6 +21,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - Fixture `fixtures/leaky_data_lake_contained/`: the three scanner files plus
   the output of a live lab run (2026-10-27).
 
+### Documentation
+
+- README: "Runtime evidence: was the agent contained?" shows the lab's six
+  controls on the chain's instance node; every row, count and claim is checked
+  against the contained golden SARIF by `tests/test_readme_evidence.py`. The
+  confidence table lists `operator_declared`.
+
 ### Fixed
 
 - SARIF `$schema` now names the OASIS errata01 schema

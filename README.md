@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11 | 3.12](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](https://github.com/iconexx-bit/ascc/actions/workflows/ci.yml)
 
-ASCC is a correlation and reasoning layer over cloud infrastructure security tooling — it never talks to a cloud API itself, and every fact it works with already came from Trivy, Prowler, or Checkov.
+ASCC is a correlation and reasoning layer over cloud infrastructure security tooling — it never talks to a cloud API itself, and every fact it works with already came from Trivy, Prowler, Checkov, or the verdict of the [containment lab](https://github.com/iconexx-bit/ai-agent-containment-lab).
 
 ## The problem
 
@@ -143,6 +143,48 @@ Terraform does not have to. The `can_access` edge is a wildcard inline policy
 exhaustive — KMS key policies and VPC endpoint policies are not checked either.
 <!-- /readme-demo:chain -->
 
+## Runtime evidence: was the agent contained?
+
+<!-- readme-demo:evidence -->
+A scanner says what is exposed. The
+[containment lab](https://github.com/iconexx-bit/ai-agent-containment-lab) tests
+what happens when an agent on that host misbehaves: egress blocked, tripwire
+sinkholed, detection rule files present, canary accounts in place, and how fast
+the killswitch closes the range. Its verdict comes in as SARIF (`clab/v1`), next
+to the three scanners:
+
+```console
+$ uv run ascc correlate --input fixtures/leaky_data_lake_contained/
+Attack chains: 1 (longest 3 hops, confidence 0.6)
+Runtime evidence: 6 (6 verified, 0 not verified; 6 on chain nodes; binding declared, not observed)
+```
+
+The six controls land on the chain's EC2 node,
+`aws:ec2:instance:i-0a1b2c3d4e5f67890`, in `chains[].nodes[].evidence`:
+
+| Rule | Control | Status | Lab detail |
+|---|---|---|---|
+| `CLAB-CANARY-001` | canaries | verified | all present: svc-legacy backup-admin ctf-canary |
+| `CLAB-EGRESS-001` | egress | verified | rc_ip=7 rc_dns=7 (blocked set: 6,7,28) |
+| `CLAB-SIGMA-001` | sigma | verified | present=8 expected=8 range=100200-100299 |
+| `CLAB-SIMCA-001` | sim_ca | verified | pem-header ok sha256=07d47afcee023a84e47ccecbbe594ea6e2b047e7818ababd3636098da3fc5951 (no openssl CLI in image) |
+| `CLAB-TRIPWIRE-001` | tripwire | verified | canary.tripwire-range.invalid sinkholed -> :: |
+| `CLAB-TTC-001` | ttc | verified | TTC median 1598 ms (min 1568, max 1687); 5 of 5 cycles under 60000 ms, 5 completed |
+
+**A verified control is evidence, not a finding.** The SARIF still carries 16
+results, and the chain, its edges and its 0.6 confidence are unchanged. A failed
+control becomes a finding (category `containment`) on the same node, linked to
+the chain through `chain_ids`; a skipped one becomes evidence marked
+`not_verified`.
+
+**The binding is declared, not observed.** The lab range is a local Docker range
+on one VM. The operator declared this fixture's instance as the agent's host
+(`operator_declared`, confidence 0.5), and every evidence item says so. The run
+itself is real: lab commit `4dcf8f5`, probe at 2026-10-27T05:08:35Z, TTC median
+1598 ms over 5 cycles; provenance in
+[`fixtures/leaky_data_lake_contained/README.md`](fixtures/leaky_data_lake_contained/README.md).
+<!-- /readme-demo:evidence -->
+
 ## Determinism is a contract
 
 - `results[]` sorted in product code by `(ruleId, resource_id, message)` — ordering is
@@ -169,6 +211,9 @@ CI for both the golden baseline and a live run (`tests/test_sarif_schema.py`).
 - attack chains in `runs[0].properties.chains` and graph totals in
   `runs[0].properties.graph_stats` — never as extra `results[]`
 - the chains a result lies on in its `properties.chain_ids`
+- runtime evidence from the containment lab on chain nodes
+  (`chains[].nodes[].evidence`, counted in `graph_stats.evidence`) and, on a
+  result for a declared resource, `properties.binding`
 - a stable `partialFingerprints["asccDedupKey/v1"]`, defined over resource identities
   alone — attaching cross-run history does not re-key existing findings, so re-running
   updates alerts in Code Scanning or DefectDojo instead of duplicating them
@@ -204,6 +249,7 @@ Identity resolution is not always deterministic, and bridging across scanners co
 | 1.0 | `terraform_natural_name` | The Terraform resource name is the same name used in the cloud |
 | 0.5 | `filesystem_path_heuristic` | Path `/opt/datalake-etl` looks like a hostname — probably |
 | 0.4 | `terraform_generated_id_unbridged` | Terraform name is known, the cloud-generated ID is not |
+| 0.5 | `operator_declared` | The operator named the resource (containment lab); no scanner observed the binding |
 
 **Bridge confidence** — a separate axis, not another resolution tier:
 
@@ -236,7 +282,7 @@ ingest -> correlate -> [export]
 | Component | State |
 |---|---|
 | `schema/` | Identity resolution with provenance (`MatchKey`, `resolve()`), cluster bridging (`BridgeFact`, `ResourceCluster`) |
-| `ingest/` | Trivy, Prowler, Checkov parsers behind a common `ScannerParser` interface, plus a `sniff()`-based registry dispatcher |
+| `ingest/` | Trivy, Prowler, Checkov parsers and the containment lab's `clab/v1` SARIF behind a common `ScannerParser` interface, plus a `sniff()`-based registry dispatcher |
 | `store/` | `FactRepository` with in-memory and JSONL backends; TTL marks facts stale, never deletes; `--store PATH` adds cross-run cluster and ghost membership to SARIF; a store in another format version, or with a corrupt line before the last, is refused with exit code 70 and nothing is written |
 | `correlate/` | `build_clusters()` → `ResourceCluster` (Union-Find clustering, `bridge.py`) + `CorrelationRun` (tag-conflict resolution, `effective_confidence()`, `run.py`); `build_graph()` + `find_chains()` → attack graph and entry-to-target chains (`graph.py`) |
 | `export/` | `to_sarif()` — SARIF 2.1.0, deterministic result ordering, `--output PATH` with atomic write; chains and graph stats in `runs[0].properties` |
