@@ -185,6 +185,9 @@ itself is real: lab commit `4dcf8f5`, probe at 2026-10-27T05:08:35Z, TTC median
 [`fixtures/leaky_data_lake_contained/README.md`](fixtures/leaky_data_lake_contained/README.md).
 <!-- /readme-demo:evidence -->
 
+Next: an AWS-signed binding — the lab on a real EC2 instance, its identity
+document verified by ASCC — is on the [roadmap](#roadmap).
+
 ## Determinism is a contract
 
 - `results[]` sorted in product code by `(ruleId, resource_id, message)` — ordering is
@@ -295,6 +298,9 @@ in `.githooks/pre-commit` checks lock and venv drift and runs ruff; gitleaks run
 
 - Deterministic risk score with MITRE ATT&CK mapping
 - PostgreSQL backend behind `FactRepository`
+- AWS-signed binding for runtime evidence: the containment lab runs on a real
+  EC2 instance, its emitter attaches the instance identity document, and ASCC
+  verifies AWS's signature offline instead of trusting `operator_declared` (0.5)
 
 ## Installation
 

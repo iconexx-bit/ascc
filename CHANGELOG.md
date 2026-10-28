@@ -3,6 +3,15 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Documentation
+
+- README roadmap: AWS-signed binding for runtime evidence (EC2 instance
+  identity document, signature verified offline) in place of
+  `operator_declared`; the runtime-evidence section links to it. Checked by
+  `tests/test_readme_roadmap.py`.
+
 ## [0.3.0] — 2026-10-28
 
 ### Added
