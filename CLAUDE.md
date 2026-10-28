@@ -842,6 +842,10 @@ Gate: tests/test_clab.py.
   `<!-- /readme-demo:evidence -->`; every row, count and claim is a projection of
   the contained golden, one live CLI run or the fixture's provenance README, and
   it says the binding is declared, not observed (gate: tests/test_readme_evidence.py).
+- Roadmap (A3-4, runbook v8.49): while ClabParser accepts only operator_declared,
+  README "## Roadmap" holds one item for the AWS-signed binding (EC2 instance
+  identity document) and the line after the evidence block links to it; the PR
+  that ships a signed method removes the item (gate: tests/test_readme_roadmap.py).
 
 ## Kubernetes
 
