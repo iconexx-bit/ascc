@@ -277,9 +277,9 @@ would throw away the finding.
 - Neo4j export: Alias→CanonicalResource schema + constraints (see research w33); post-store only
 - Graph DB (Neo4j/Memgraph) evaluation — strictly after store/ layer, JSONL-first stands
 - MERGE batch-ingest playbook: UNWIND 500–2000/tx, dedupe pre-DB, nodes-before-edges, no index on last_seen
-- Prompt-injection hardening (vector A): delimit scanner-controlled strings in LLM prompts (XML tags + data-not-commands instruction)
+- Prompt-injection hardening (vector A): contract since 2026-11-17, see AI layer (A3-AI), AI-3
 - ASCC-META-INJECTION rule: ingest-time detection of CL4R1T4S patterns inside findings — findings-scanning-findings, unique feature
-- Test: injection in resource tags/names CANNOT alter severity/confidence/identity (only message.markdown reachable)
+- Test: injection in resource tags/names: contract since 2026-11-17, see AI layer (A3-AI), AI-4
 - CLAUDE.md: document vectors A (ASCC eats untrusted findings) vs B (guards module detects injection in traffic) as separate threat models
 - range-dns healthcheck: nslookup A vs dnsmasq AAAA — cosmetic, documented
 - agg for asciinema→GIF (cargo install --locked agg, or asciinema upload)
@@ -846,6 +846,52 @@ Gate: tests/test_clab.py.
   README "## Roadmap" holds one item for the AWS-signed binding (EC2 instance
   identity document) and the line after the evidence block links to it; the PR
   that ships a signed method removes the item (gate: tests/test_readme_roadmap.py).
+
+## AI layer (A3-AI)
+
+Contract 2026-11-17 (runbook v8.64), written before the code.
+Gate for this text: tests/test_claude_md_ai_layer.py.
+Status: no LLM code exists. Each rule is a requirement on the first PR that
+adds it, not a description of current behaviour.
+
+Threat model (vector A): scanner output is attacker-influenced. Resource names,
+tag keys and values and finding text are written by whoever can create or tag a
+resource, and they reach any prompt built from findings. The model's output is
+therefore treated as fully attacker-controlled.
+
+- AI-1 Single write surface. Model output reaches the SARIF only as
+  results[].message.markdown: no other field, no properties, no new results[].
+  The narrator writes no store facts. The LLM never touches edges or chains.
+- AI-2 Off switch. `ASCC_LLM=off` ⇒ SARIF byte-identical to the same run
+  without the AI layer, except message.markdown fields (see Determinism).
+  A CI gate from the first PR that adds LLM code.
+- AI-3 Prompt hygiene. Scanner-controlled strings enter a prompt only inside
+  explicit data delimiters, under a data-not-commands instruction. A string
+  that contains the closing delimiter is neutralised before insertion.
+- AI-4 Confinement test. A stub model whose output the test chooses (worst
+  case: a fully compromised model) cannot change severity, confidence or
+  resource identity: everything except message.markdown stays byte-identical
+  to the `ASCC_LLM=off` run, exit code included.
+- AI-5 Output filter. Text bound for message.markdown passes a deterministic
+  filter: no URLs, no Markdown links or images, no HTML. Independent of who
+  renders the SARIF.
+- AI-6 Live evidence. Two models, one known-weak and one robust, run on
+  injected fixtures: report the count of authoritative-field changes
+  (expected 0) and the measured rate of distorted text, with n. CI runs the
+  stub of AI-4 only; a live run is evidence, not a gate.
+- AI-7 Corpus. Payloads in this repository are original, MIT, shaped to the
+  limits of the carrier field (an EC2 tag value holds 256 characters).
+  External corpora (LogInject-1.0 adversarial set, RASRL v1.0; LogJack, MIT)
+  are used locally by pinned archive hash and sample ids; their payload text
+  is not committed.
+- AI-8 Claim wording. Public text may say that injection in scanner data
+  cannot change any authoritative field. It never says ASCC is resistant to
+  prompt injection: message.markdown itself remains distortable.
+
+Open, operator decision pending, not yet contract: behaviour when `ASCC_LLM`
+is unset; where the narrator lives (core or ascc-extras; core never imports
+extras); filter action on a violation (drop the text or strip the match);
+the two models and n for AI-6.
 
 ## Kubernetes
 
