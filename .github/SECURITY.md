@@ -1,40 +1,48 @@
-# Security Policy / Политика безопасности
+# Security Policy
 
-Мы серьезно относимся к безопасности этого проекта. В этом документе описаны поддерживаемые версии и процесс безопасного раскрытия информации об уязвимостях (Vulnerability Disclosure Policy).
+We take the security of this project seriously. This document describes which
+versions are supported and how to report a vulnerability privately.
 
-## Поддерживаемые версии (Supported Versions)
+## Supported versions
 
-Проект на ранней стадии разработки и не использует версионирование релизов.
-Обновления безопасности предоставляются только для ветки `main`.
+ASCC is published as tagged releases (`v0.x`). Security fixes land on `main`
+and ship in the next release; only the latest release is supported.
 
-## Как сообщить об уязвимости (Reporting a Vulnerability)
+## Reporting a vulnerability
 
-Пожалуйста, **НЕ СООБЩАЙТЕ** об уязвимостях безопасности через публичные Issues.
+Please **do not** report security vulnerabilities through public issues.
 
-Если вы обнаружили потенциальную уязвимость, пожалуйста, используйте один из следующих способов:
+If you find a potential vulnerability, use one of these channels:
 
-1. **GitHub Private Vulnerability Reporting:** Перейдите во вкладку [Security -> Advisories] и нажмите "Report a vulnerability".
-2. **Email:** Отправьте детализированный отчет на `iconexx@gmail.com`. Включите в тему письма тег `[SECURITY]`.
+1. **GitHub private vulnerability reporting:** open the repository's
+   **Security** tab → **Advisories** and click **Report a vulnerability**.
+2. **Email:** send a detailed report to `iconexx@gmail.com` with the tag
+   `[SECURITY]` in the subject line.
 
-### Что должен содержать отчет:
-* Описание уязвимости и ее потенциальное влияние.
-* Шаги для воспроизведения (PoC - Proof of Concept).
-* Возможные векторы атак.
-* Предлагаемое исправление (если есть).
+### What a report should contain
 
-### SLA по обработке инцидентов:
-* Подтверждение получения отчета: в течение **48 часов**.
-* Первичная оценка уязвимости: в течение **7 дней**.
-* Мы будем держать вас в курсе на каждом этапе процесса исправления.
+- A description of the vulnerability and its potential impact.
+- Steps to reproduce (a proof of concept).
+- Possible attack vectors.
+- A suggested fix, if you have one.
 
-## Вне скоупа (Out of Scope)
+### Response times
 
-Следующие типы находок не принимаются в качестве уязвимостей безопасности:
-* Отсутствие флагов безопасности в HTTP-заголовках (если это не ведет к прямой эксплуатации).
-* Атаки типа Denial of Service (DoS / DDoS).
-* Уязвимости, требующие физического доступа к устройству пользователя.
-* Социальная инженерия и фишинг.
+- Acknowledgement of the report: within **48 hours**.
+- Initial assessment of the vulnerability: within **7 days**.
+- We will keep you informed at each stage of the fix.
 
-## Safe Harbor (Безопасная гавань)
+## Out of scope
 
-Мы поддерживаем деятельность независимых исследователей безопасности (Good Faith Security Research). Если вы следуете этой политике при поиске и сообщении об уязвимостях, мы не будем инициировать судебные иски или жалобы в правоохранительные органы, связанные с вашим исследованием.
+The following are not accepted as security vulnerabilities:
+
+- Missing security flags in HTTP headers, unless they lead to direct exploitation.
+- Denial of service attacks (DoS / DDoS).
+- Vulnerabilities that require physical access to the user's device.
+- Social engineering and phishing.
+
+## Safe harbor
+
+We support good-faith security research. If you follow this policy while
+looking for and reporting vulnerabilities, we will not initiate legal action
+or complaints to law enforcement related to your research.
