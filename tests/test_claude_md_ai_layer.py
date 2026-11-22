@@ -4,7 +4,10 @@ The contract is written first (CLAUDE.md, "AI layer (A3-AI)"): one write
 surface for model output, an off switch that keeps the SARIF byte-identical,
 prompt hygiene for scanner-controlled strings, a confinement test with a
 compromised model, a deterministic output filter, live evidence on two
-models, the corpus rule and the wording a public claim may use. A deleted
+models, the corpus rule, the wording a public claim may use and where the
+narrator lives. The operator decisions of 2026-11-17 are contract, not an
+open list: off when ASCC_LLM is unset, drop the whole text on a filter
+violation, two named models with n = 5, a separate package. A deleted
 line is fine; a lost rule is not: each rule is pinned by its id and by the
 terms that carry its meaning.
 """
@@ -22,13 +25,14 @@ GATE = "tests/test_claude_md_ai_layer.py"
 
 RULE_TERMS = {
     "AI-1": ("message.markdown", "never touches edges or chains"),
-    "AI-2": ("ASCC_LLM=off", "byte-identical"),
+    "AI-2": ("ASCC_LLM=off", "byte-identical", "unset means off", "configuration error"),
     "AI-3": ("data delimiters", "data-not-commands"),
     "AI-4": ("stub model", "severity", "confidence", "identity"),
-    "AI-5": ("deterministic filter", "URLs", "images", "HTML"),
-    "AI-6": ("known-weak", "robust"),
+    "AI-5": ("deterministic filter", "URLs", "images", "HTML", "whole text", "stderr"),
+    "AI-6": ("small model", "qwen-2.5-7b", "robust", "n = 5", "resolved"),
     "AI-7": ("RASRL", "not committed"),
     "AI-8": ("authoritative field", "resistant to prompt injection"),
+    "AI-9": ("install extra", "never imports", "finding id"),
 }
 
 MOVED_FROM_BACKLOG = (
@@ -89,3 +93,9 @@ def test_backlog_no_longer_carries_what_became_contract() -> None:
     flat = _flat(_claude_md())
     left = [intent for intent in MOVED_FROM_BACKLOG if intent in flat]
     assert not left, f"still worded as a backlog intent: {left}"
+
+
+def test_ai_layer_has_no_pending_operator_decisions() -> None:
+    section = _flat(ai_layer_section(_claude_md()))
+    assert "not yet contract" not in section
+    assert "Open decisions: none." in section
