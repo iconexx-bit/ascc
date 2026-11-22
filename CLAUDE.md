@@ -849,7 +849,7 @@ Gate: tests/test_clab.py.
 
 ## AI layer (A3-AI)
 
-Contract 2026-11-17 (runbook v8.64), written before the code.
+Contract 2026-11-17, amended 2026-11-22 (runbook v8.66), written before the code.
 Gate for this text: tests/test_claude_md_ai_layer.py.
 Status: no LLM code exists. Each rule is a requirement on the first PR that
 adds it, not a description of current behaviour.
@@ -862,9 +862,12 @@ therefore treated as fully attacker-controlled.
 - AI-1 Single write surface. Model output reaches the SARIF only as
   results[].message.markdown: no other field, no properties, no new results[].
   The narrator writes no store facts. The LLM never touches edges or chains.
-- AI-2 Off switch. `ASCC_LLM=off` ⇒ SARIF byte-identical to the same run
-  without the AI layer, except message.markdown fields (see Determinism).
-  A CI gate from the first PR that adds LLM code.
+- AI-2 Off switch. `ASCC_LLM` unset means off, the same as `ASCC_LLM=off`;
+  the layer runs only on the explicit `ASCC_LLM=on`. Any other value is a
+  configuration error: exit code 2 (USAGE), no SARIF written. `ASCC_LLM=off`
+  ⇒ SARIF byte-identical to the same run without the AI layer, except
+  message.markdown fields (see Determinism). A CI gate from the first PR that
+  adds LLM code.
 - AI-3 Prompt hygiene. Scanner-controlled strings enter a prompt only inside
   explicit data delimiters, under a data-not-commands instruction. A string
   that contains the closing delimiter is neutralised before insertion.
@@ -874,11 +877,16 @@ therefore treated as fully attacker-controlled.
   to the `ASCC_LLM=off` run, exit code included.
 - AI-5 Output filter. Text bound for message.markdown passes a deterministic
   filter: no URLs, no Markdown links or images, no HTML. Independent of who
-  renders the SARIF.
-- AI-6 Live evidence. Two models, one known-weak and one robust, run on
-  injected fixtures: report the count of authoritative-field changes
-  (expected 0) and the measured rate of distorted text, with n. CI runs the
-  stub of AI-4 only; a live run is evidence, not a gate.
+  renders the SARIF. On a violation the whole text for that finding is
+  dropped and the result keeps its deterministic message.text; the number of
+  dropped texts goes to stderr, never into the SARIF.
+- AI-6 Live evidence. Two models through the LiteLLM proxy: a small model
+  (qwen-2.5-7b) and a robust one (a Claude Sonnet route), n = 5 runs per
+  payload per model. The provider model id each run resolved to is recorded
+  with the evidence; a proxy alias is never the name used in public text.
+  Report the count of authoritative-field changes (expected 0) and the
+  measured rate of distorted text, with n. CI runs the stub of AI-4 only; a
+  live run is evidence, not a gate.
 - AI-7 Corpus. Payloads in this repository are original, MIT, shaped to the
   limits of the carrier field (an EC2 tag value holds 256 characters).
   External corpora (LogInject-1.0 adversarial set, RASRL v1.0; LogJack, MIT)
@@ -887,11 +895,13 @@ therefore treated as fully attacker-controlled.
 - AI-8 Claim wording. Public text may say that injection in scanner data
   cannot change any authoritative field. It never says ASCC is resistant to
   prompt injection: message.markdown itself remains distortable.
+- AI-9 Packaging. The narrator lives in this repository as a separate package
+  behind an install extra; core never imports it (a structural test from the
+  first PR that adds it). The narrator returns only a mapping from finding id
+  to text; core applies the AI-5 filter and writes message.markdown.
 
-Open, operator decision pending, not yet contract: behaviour when `ASCC_LLM`
-is unset; where the narrator lives (core or ascc-extras; core never imports
-extras); filter action on a violation (drop the text or strip the match);
-the two models and n for AI-6.
+Open decisions: none. The operator decisions of 2026-11-17 are folded into
+AI-2, AI-5, AI-6 and AI-9.
 
 ## Kubernetes
 
