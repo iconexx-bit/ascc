@@ -5,6 +5,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ## [Unreleased]
 
+### Fixed
+
+- `ascc correlate`: a recognised scanner file that its parser cannot read
+  (for example current Prowler OCSF or open-source Checkov output, see
+  `fixtures/leaky_data_lake/README.md`) exited with an uncaught traceback and
+  code 1, the code reserved for findings. It now exits 70 (`INTERNAL`) with
+  the file and scanner named on stderr, and writes no SARIF and no store.
+  Checked by `tests/test_cli_parse_errors.py`.
+
 ### Documentation
 
 - README roadmap: AWS-signed binding for runtime evidence (EC2 instance

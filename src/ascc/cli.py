@@ -132,12 +132,23 @@ def correlate(
         if parser_cls is None:
             skipped.append((file.name, "unrecognized format"))
             continue
+        parser = parser_cls()
         try:
-            scan_runs.append(parser_cls().parse(file))
+            scan_runs.append(parser.parse(file))
         except ClabFormatError as exc:
             # A recognised lab file that breaks clab/v1 is refused, not read
             # loosely: nothing is written (CLAUDE.md, "Runtime evidence (A3)").
             typer.echo(f"Invalid {file.name}: {exc}", err=True)
+            raise typer.Exit(code=ExitCode.INTERNAL) from None
+        except Exception as exc:  # noqa: BLE001 — CLI boundary: see CLAUDE.md, "Contracts"
+            # A recognised scanner file its parser cannot read stops the run
+            # with INTERNAL, not an uncaught traceback (exit 1 = FINDINGS), and
+            # is not skipped: a dropped scanner must not look like a clean
+            # result. repr() keeps control characters from the file inert.
+            typer.echo(
+                f"Cannot parse {file.name} as {parser.scanner_name} output: {exc!r}",
+                err=True,
+            )
             raise typer.Exit(code=ExitCode.INTERNAL) from None
 
     if not scan_runs:
