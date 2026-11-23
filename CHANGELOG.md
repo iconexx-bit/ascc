@@ -59,6 +59,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
   draws no edge. `graph_stats.unread_edge_sources` counts resources whose
   edge fields are absent in every known layout. Checked by
   `tests/test_graph_real_output.py`.
+- Trivy: current output reports misconfigurations as `AWS-NNNN` without
+  `AVDID`, and every one became `uncategorized`, so the open SSH rule was not
+  an entry to an attack chain. The category lookup now ignores the `AVD-`
+  prefix; `rule_id` is kept as the scanner gave it. Checked by
+  `tests/test_trivy_real_output.py`.
 - Tests: the CLI console width is pinned for every test (`tests/conftest.py`),
   so tests that assert on printed lines no longer depend on the terminal they
   run in. Checked by `tests/test_console_width.py`.
