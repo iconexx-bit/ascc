@@ -27,15 +27,15 @@ collapsed.
 | Checkov | 21 | 21 | Same paths, but `severity` and `resource_address` are `null` in all 22 real failed checks. |
 | Trivy | 50 | 28 | `Misconfigurations[].AVDID` and `MisconfSummary.Exceptions` are absent. The 20 vulnerability fields cannot be compared: the real filesystem scan found no CVEs. |
 
-What this means for the demo: on the real output in
-`fixtures/leaky_data_lake_real/` the current Checkov parser stops with an
-error (the `null` severity). Parsers that still stop on real output: Checkov.
-With that worked around, the graph found none of the Prowler resource
-attributes it builds edges from and drew no edges. The demo shows what ASCC
-does with input laid out like this fixture, not yet what it does with current
-scanner output. Parsers and a graph that read real output are planned for
-v0.4.0; this section goes away when a test pins every fixture field to real
-output.
+What this means for the demo: every current parser reads the real output in
+`fixtures/leaky_data_lake_real/`. Parsers that still stop on real output:
+none. Checkov's `null` severity is reported as unknown, and with
+`resource_address` empty its findings are not yet tied to a resource. The
+graph found none of the Prowler resource attributes it builds edges from and
+drew no edges. The demo shows what ASCC does with input laid out like this
+fixture, not yet what it does with current scanner output. A graph that reads
+real output is planned for v0.4.0; this section goes away when a test pins
+every fixture field to real output.
 
 ## Scenario
 

@@ -19,10 +19,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 ### Fixed
 
 - `ascc correlate`: a recognised scanner file that its parser cannot read
-  (for example open-source Checkov output, see
-  `fixtures/leaky_data_lake/README.md`) exited with an uncaught traceback and
-  code 1, the code reserved for findings. It now exits 70 (`INTERNAL`) with
-  the file and scanner named on stderr, and writes no SARIF and no store.
+  exited with an uncaught traceback and code 1, the code reserved for
+  findings. It now exits 70 (`INTERNAL`) with the file and scanner named on
+  stderr, and writes no SARIF and no store.
   Checked by `tests/test_cli_parse_errors.py`.
 - `ascc correlate`: an input file that is not valid UTF-8 exited with an
   uncaught traceback and code 1. It is now skipped with `not valid JSON`, like
@@ -39,6 +38,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
   seconds, is read; it stopped every run with exit 70 (`TypeError`). The ISO
   8601 string of older output still works; both give an aware UTC start time.
   Checked by `tests/test_prowler_real_output.py`.
+- Severity the scanner did not give: open-source Checkov output
+  (`severity: null`) stopped every run with exit 70 (`AttributeError`); the
+  Trivy string `UNKNOWN` and OCSF `severity_id` 0 became INFO. All of them,
+  and any value ASCC does not recognise, are now `unknown`: the SARIF result
+  is `warning` and the rule carries `ascc/severity: unknown` and no
+  `security-severity`. Checked by `tests/test_severity_unknown.py`.
 - Tests: the CLI console width is pinned for every test (`tests/conftest.py`),
   so tests that assert on printed lines no longer depend on the terminal they
   run in. Checked by `tests/test_console_width.py`.
