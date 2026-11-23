@@ -17,6 +17,10 @@ _EVENT_CATEGORY: dict[str, Category] = {
     "iam_inline_policy_no_administrative_privileges": Category.EXCESSIVE_PRIVILEGE,
     "ec2_securitygroup_allow_ingress_from_internet_to_port_22": Category.NETWORK_EXPOSURE,
     "ec2_instance_public_ip": Category.NETWORK_EXPOSURE,
+    # Current Prowler IDs of the same entries (real output, 5.46); the full
+    # table of real IDs is O48.
+    "ec2_securitygroup_allow_ingress_from_internet_to_tcp_port_22": Category.NETWORK_EXPOSURE,
+    "ec2_instance_port_ssh_exposed_to_internet": Category.NETWORK_EXPOSURE,
 }
 
 _PROWLER_TYPE_TO_TF_TYPE: dict[str, str] = {
@@ -39,6 +43,23 @@ def _parse_timestamp(raw: float | str) -> datetime:
 
 def _tags_dict(tags: list[dict[str, str]]) -> dict[str, str]:
     return {tag["key"]: tag["value"] for tag in tags}
+
+
+def _resource_tags(resource_data: dict) -> dict[str, str]:
+    # Synthetic fixture: resources[].tags as [{key, value}]. Current OCSF:
+    # resources[].tags is absent or null, tags are data.metadata.tags as
+    # [{Key, Value}] (CLAUDE.md, "Graph and chains (A2)").
+    tags = _tags_dict(resource_data.get("tags") or [])
+    data = resource_data.get("data")
+    metadata = data.get("metadata") if isinstance(data, dict) else None
+    for tag in (metadata.get("tags") if isinstance(metadata, dict) else None) or ():
+        if (
+            isinstance(tag, dict)
+            and isinstance(tag.get("Key"), str)
+            and isinstance(tag.get("Value"), str)
+        ):
+            tags.setdefault(tag["Key"], tag["Value"])
+    return tags
 
 
 class ProwlerParser(ScannerParser):
@@ -112,7 +133,7 @@ class ProwlerParser(ScannerParser):
         resource_data: dict,
     ) -> None:
         key_str = str(resolution.key)
-        tags = _tags_dict(resource_data.get("tags", []))
+        tags = _resource_tags(resource_data)
         existing = resources.get(key_str)
         if existing is None:
             resources[key_str] = Resource(

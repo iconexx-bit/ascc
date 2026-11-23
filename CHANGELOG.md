@@ -50,6 +50,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
   `resource_address` is null, and `ascc correlate` prints
   `Findings tied to no resource: N (...)` for findings that still resolve to
   none. Checked by `tests/test_checkov_real_output.py`.
+- Attack graph: on current Prowler OCSF output it drew no edge and no chain,
+  without a trace: the edge facts sit under `resources[].data.metadata`, the
+  inline policy is a resource of its own and tags are `[{Key, Value}]`. Both
+  layouts are read now, two current entry check IDs have a category, and on
+  `fixtures/leaky_data_lake_real` the graph finds one chain, security group ->
+  instance -> role -> bucket (3 hops, confidence 0.6). A managed `*/*` policy
+  draws no edge. `graph_stats.unread_edge_sources` counts resources whose
+  edge fields are absent in every known layout. Checked by
+  `tests/test_graph_real_output.py`.
 - Tests: the CLI console width is pinned for every test (`tests/conftest.py`),
   so tests that assert on printed lines no longer depend on the terminal they
   run in. Checked by `tests/test_console_width.py`.

@@ -757,6 +757,17 @@ Code: src/ascc/correlate/graph.py. Gate: tests/test_graph.py.
     denies in those layers are not in the scanner data, so the edge is an upper
     bound on access, and says so.
   Source fields are Prowler OCSF `resources[].data`.
+  Current OCSF (Prowler 5.46) carries the same facts elsewhere, and both
+  layouts are read: `data.metadata.security_groups`,
+  `data.metadata.instance_profile.Arn`; an inline policy is a resource of its
+  own (type AwsIamPolicy, `metadata.type` "Inline", uid = the role's ARN)
+  whose `metadata.document` has an Allow statement with Action "*" and
+  Resource "*". A managed policy (`metadata.type` not "Inline", e.g.
+  AdministratorAccess) draws no edge (runbook O49). Tags come from
+  `resources[].tags` or `data.metadata.tags` ([{Key, Value}]).
+  graph_stats.unread_edge_sources counts instance and inline-policy resources
+  whose edge fields are absent in both layouts; emitted only when > 0.
+  Pinned by tests/test_graph_real_output.py.
 - Relation confidences live in graph.EDGE_CONFIDENCE; identity confidences in
   store.policy.MAX_CONFIDENCE. One document, two code tables, never mixed:
   identity says "A and B are one resource", relation says "A leads to B".
