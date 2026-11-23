@@ -139,6 +139,8 @@ upstream date field happens to report.
   LOW→note/3.0, INFO→none/0.0. The numeric is
   `rule.properties.security-severity`, read by GitHub Code Scanning —
   without it CRITICAL and HIGH are indistinguishable.
+  - UNKNOWN→warning with no `security-severity`; the rule carries
+  `ascc/severity: unknown` instead (see Contracts, Ingest).
   - SARIF `ruleId` = `{scanner}/{rule_id}` (e.g. `trivy/CVE-2021-44228`).
   - Scanner-namespaced because scanners do not guarantee uniqueness among
   themselves. No `ASCC-` prefix: the rule belongs to the scanner, not to
@@ -482,6 +484,7 @@ while it held.
 - CLI: a recognised scanner file that its parser cannot read stops the run: stderr names the file and the scanner, exit 70 (INTERNAL), nothing is written (no SARIF, no store write). The file is not skipped: a dropped scanner must not look like a clean result. Pinned by tests/test_cli_parse_errors.py.
 - CLI: an input file that is not valid UTF-8 JSON is skipped with the line `not valid JSON` (it is not recognised as scanner output, so skipping it hides no scanner failure); an input file that cannot be read or whose scanner cannot be told apart stops the run: stderr names the file, exit 70 (INTERNAL), nothing is written. JSON nested too deep to parse counts as not valid JSON, and scanner files are read as UTF-8 whatever the locale. Pinned by tests/test_cli_input_files.py.
 - Ingest: Prowler `finding_info.created_time` is epoch seconds (current OCSF output) or an ISO 8601 string (older output, the synthetic fixture); both become an aware UTC `started_at`. Pinned by tests/test_prowler_real_output.py.
+- Ingest: A severity the scanner did not give is `UNKNOWN`, never INFO: Checkov `null` (open-source Checkov without a platform API key), the Trivy string `UNKNOWN`, OCSF `severity_id` 0 (Unknown) and 99 (Other), and any value ASCC does not recognise; a severity that is neither a string nor null is a format error (exit 70). In SARIF the result is `warning` (the check failed; `none` would say it did not) and the rule carries `ascc/severity: unknown` and no `security-severity`, so no score appears that the scanner never gave. Pinned by tests/test_severity_unknown.py.
 
 ## Determinism
 

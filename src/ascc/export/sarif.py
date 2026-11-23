@@ -32,13 +32,16 @@ TOOL_NAME = "ASCC"
 # CLAUDE.md, "Инварианты": SARIF level mapping.
 # level -> (sarif level, security-severity). CRITICAL/HIGH both map to
 # "error" (SARIF has no level above it) — security-severity is what lets
-# GitHub Code Scanning tell them apart.
-_LEVEL_BY_SEVERITY: dict[Severity, tuple[str, float]] = {
+# GitHub Code Scanning tell them apart. UNKNOWN: the check failed, so the
+# result is a problem ("warning", the SARIF default; "none" would say it is
+# not), and the rule gets no security-severity: no score the scanner never gave.
+_LEVEL_BY_SEVERITY: dict[Severity, tuple[str, float | None]] = {
     Severity.CRITICAL: ("error", 9.5),
     Severity.HIGH: ("error", 8.0),
     Severity.MEDIUM: ("warning", 5.5),
     Severity.LOW: ("note", 3.0),
     Severity.INFO: ("none", 0.0),
+    Severity.UNKNOWN: ("warning", None),
 }
 
 
@@ -66,14 +69,14 @@ def _rule_id(finding: Finding) -> str:
 
 def _rule(finding: Finding) -> dict:
     level, security_severity = _LEVEL_BY_SEVERITY[finding.severity]
-    return {
-        "id": _rule_id(finding),
-        "properties": {
-            "security-severity": str(security_severity),
-            "ascc/category": str(finding.category),
-            "ascc/level": level,
-        },
-    }
+    properties: dict[str, str] = {}
+    if security_severity is None:
+        properties["ascc/severity"] = "unknown"
+    else:
+        properties["security-severity"] = str(security_severity)
+    properties["ascc/category"] = str(finding.category)
+    properties["ascc/level"] = level
+    return {"id": _rule_id(finding), "properties": properties}
 
 
 def _cluster_properties(finding: Finding, run: CorrelationRun) -> dict[str, list[str]]:

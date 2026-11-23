@@ -11,16 +11,27 @@ class Severity(IntEnum):
     MEDIUM = 2
     HIGH = 3
     CRITICAL = 4
+    # The scanner gave no severity (CLAUDE.md, Contracts). Defined last so that
+    # iteration still starts at INFO; its value orders nothing: code that ranks
+    # severities must handle UNKNOWN explicitly, never as "below INFO".
+    UNKNOWN = -1
 
     @classmethod
-    def from_severity_string(cls, value: str) -> Severity:
+    def from_severity_string(cls, value: str | None) -> Severity:
+        # Open-source Checkov reports null, Trivy can report "UNKNOWN": a
+        # severity the scanner did not give, or one ASCC does not recognise,
+        # is UNKNOWN, never INFO.
+        if value is None:
+            return cls.UNKNOWN
+        if not isinstance(value, str):
+            raise TypeError(f"severity must be a string or null, not {type(value).__name__}")
         return {
-            "UNKNOWN": cls.INFO,
+            "INFO": cls.INFO,
             "LOW": cls.LOW,
             "MEDIUM": cls.MEDIUM,
             "HIGH": cls.HIGH,
             "CRITICAL": cls.CRITICAL,
-        }.get(value.upper(), cls.INFO)
+        }.get(value.upper(), cls.UNKNOWN)
 
     @classmethod
     def from_trivy(cls, value: str) -> Severity:
@@ -28,16 +39,16 @@ class Severity(IntEnum):
 
     @classmethod
     def from_ocsf(cls, severity_id: int) -> Severity:
-        # OCSF: 0 Unknown, 1 Info, 2 Low, 3 Medium, 4 High, 5 Critical, 6 Fatal
+        # OCSF: 0 Unknown, 1 Info, 2 Low, 3 Medium, 4 High, 5 Critical, 6 Fatal,
+        # 99 Other. Unknown, Other and any id not listed are UNKNOWN, never INFO.
         return {
-            0: cls.INFO,
             1: cls.INFO,
             2: cls.LOW,
             3: cls.MEDIUM,
             4: cls.HIGH,
             5: cls.CRITICAL,
             6: cls.CRITICAL,
-        }.get(severity_id, cls.INFO)
+        }.get(severity_id, cls.UNKNOWN)
 
     @classmethod
     def from_security_severity(cls, score: float) -> Severity:
