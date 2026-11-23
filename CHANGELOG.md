@@ -44,6 +44,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
   and any value ASCC does not recognise, are now `unknown`: the SARIF result
   is `warning` and the rule carries `ascc/severity: unknown` and no
   `security-severity`. Checked by `tests/test_severity_unknown.py`.
+- Checkov: open-source output leaves `resource_address` null, so no Checkov
+  finding was tied to a resource and Checkov correlated with no other
+  scanner. The Terraform address now comes from `resource` when
+  `resource_address` is null, and `ascc correlate` prints
+  `Findings tied to no resource: N (...)` for findings that still resolve to
+  none. Checked by `tests/test_checkov_real_output.py`.
 - Tests: the CLI console width is pinned for every test (`tests/conftest.py`),
   so tests that assert on printed lines no longer depend on the terminal they
   run in. Checked by `tests/test_console_width.py`.
