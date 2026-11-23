@@ -476,6 +476,7 @@ while it held.
 - ExitCode(IntEnum): OK=0, FINDINGS=1 (reserved --fail-on), USAGE=2, NO_INPUT=3, INTERNAL=70.
 - CLI: `--store` is orthogonal to `--input`; absent `--store` ⇒ byte-identical to golden baseline.
 - CLI: a recognised scanner file that its parser cannot read stops the run: stderr names the file and the scanner, exit 70 (INTERNAL), nothing is written (no SARIF, no store write). The file is not skipped: a dropped scanner must not look like a clean result. Pinned by tests/test_cli_parse_errors.py.
+- CLI: an input file that is not valid UTF-8 JSON is skipped with the line `not valid JSON` (it is not recognised as scanner output, so skipping it hides no scanner failure); an input file that cannot be read or whose scanner cannot be told apart stops the run: stderr names the file, exit 70 (INTERNAL), nothing is written. Pinned by tests/test_cli_input_files.py.
 
 ## Determinism
 
