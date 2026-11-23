@@ -13,6 +13,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
   code 1, the code reserved for findings. It now exits 70 (`INTERNAL`) with
   the file and scanner named on stderr, and writes no SARIF and no store.
   Checked by `tests/test_cli_parse_errors.py`.
+- `ascc correlate`: an input file that is not valid UTF-8 exited with an
+  uncaught traceback and code 1. It is now skipped with `not valid JSON`, like
+  any file that is not valid JSON. A file that cannot be read, or whose scanner
+  cannot be told apart (two parsers match it), exits 70 (`INTERNAL`) with the
+  file named on stderr, and writes no SARIF and no store.
+  Checked by `tests/test_cli_input_files.py`.
 
 ### Documentation
 

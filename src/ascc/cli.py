@@ -124,11 +124,28 @@ def correlate(
         if not file.is_file():
             continue
         try:
-            data = json.loads(file.read_text())
+            text = file.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            # JSON is UTF-8 (RFC 8259): a file that does not decode is not
+            # scanner output, so it is skipped like any file that is not JSON.
+            skipped.append((file.name, "not valid JSON"))
+            continue
+        except OSError as exc:
+            # An unreadable file may be scanner output: stop, do not skip, so
+            # that a dropped scanner does not look like a clean result.
+            typer.echo(f"Cannot read {file.name}: {exc!r}", err=True)
+            raise typer.Exit(code=ExitCode.INTERNAL) from None
+        try:
+            data = json.loads(text)
         except json.JSONDecodeError:
             skipped.append((file.name, "not valid JSON"))
             continue
-        parser_cls = parser_for(data)
+        try:
+            parser_cls = parser_for(data)
+        except Exception as exc:  # noqa: BLE001 — CLI boundary: see CLAUDE.md, "Contracts"
+            # Two parsers claim the file: stop, as for an unreadable one.
+            typer.echo(f"Cannot identify the scanner of {file.name}: {exc!r}", err=True)
+            raise typer.Exit(code=ExitCode.INTERNAL) from None
         if parser_cls is None:
             skipped.append((file.name, "unrecognized format"))
             continue
