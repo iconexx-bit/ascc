@@ -65,6 +65,34 @@ def test_fixture_readme_says_it_is_synthetic() -> None:
     assert "## How close it is to real scanner output" in text
 
 
+def _parsers_that_stop_on_real_output() -> set[str]:
+    from ascc.ingest.checkov import CheckovParser
+    from ascc.ingest.prowler import ProwlerParser
+    from ascc.ingest.trivy import TrivyParser
+
+    real = REPO_ROOT / "fixtures" / "leaky_data_lake_real"
+    stopped: set[str] = set()
+    for name, parser, label in (
+        ("checkov.json", CheckovParser, "Checkov"),
+        ("prowler.json", ProwlerParser, "Prowler"),
+        ("trivy-config.json", TrivyParser, "Trivy"),
+        ("trivy-rootfs.json", TrivyParser, "Trivy"),
+    ):
+        try:
+            parser().parse(real / name)
+        except Exception:  # noqa: BLE001 — any failure counts as "stops"
+            stopped.add(label)
+    return stopped
+
+
+def test_fixture_readme_names_the_parsers_that_stop_on_real_output() -> None:
+    text = _flat((FIXTURE / "README.md").read_text(encoding="utf-8"))
+    match = re.search(r"Parsers that still stop on real output: ([A-Za-z, ]+)\.", text)
+    assert match, "README must say which parsers still stop on real output"
+    named = {p.strip() for p in match.group(1).split(",")} - {"none"}
+    assert named == _parsers_that_stop_on_real_output()
+
+
 def test_fixture_readme_funnel_matches_the_readme_demo() -> None:
     demo = FUNNEL.findall((REPO_ROOT / "README.md").read_text(encoding="utf-8"))
     fixture = FUNNEL.findall((FIXTURE / "README.md").read_text(encoding="utf-8"))

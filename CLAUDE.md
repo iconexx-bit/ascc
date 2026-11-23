@@ -481,6 +481,7 @@ while it held.
 - CLI: `--store` is orthogonal to `--input`; absent `--store` ⇒ byte-identical to golden baseline.
 - CLI: a recognised scanner file that its parser cannot read stops the run: stderr names the file and the scanner, exit 70 (INTERNAL), nothing is written (no SARIF, no store write). The file is not skipped: a dropped scanner must not look like a clean result. Pinned by tests/test_cli_parse_errors.py.
 - CLI: an input file that is not valid UTF-8 JSON is skipped with the line `not valid JSON` (it is not recognised as scanner output, so skipping it hides no scanner failure); an input file that cannot be read or whose scanner cannot be told apart stops the run: stderr names the file, exit 70 (INTERNAL), nothing is written. JSON nested too deep to parse counts as not valid JSON, and scanner files are read as UTF-8 whatever the locale. Pinned by tests/test_cli_input_files.py.
+- Ingest: Prowler `finding_info.created_time` is epoch seconds (current OCSF output) or an ISO 8601 string (older output, the synthetic fixture); both become an aware UTC `started_at`. Pinned by tests/test_prowler_real_output.py.
 
 ## Determinism
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 from ascc.schema.identity import RefScheme, Resolution, ResourceRef, resolve
@@ -27,7 +27,13 @@ _PROWLER_TYPE_TO_TF_TYPE: dict[str, str] = {
 }
 
 
-def _parse_timestamp(raw: str) -> datetime:
+def _parse_timestamp(raw: float | str) -> datetime:
+    # Current OCSF output carries epoch seconds; older output and the
+    # synthetic fixture an ISO 8601 string.
+    if isinstance(raw, bool):
+        raise TypeError("created_time must be epoch seconds or an ISO 8601 string")
+    if isinstance(raw, int | float):
+        return datetime.fromtimestamp(raw, tz=UTC)
     return datetime.fromisoformat(raw)
 
 

@@ -19,7 +19,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 ### Fixed
 
 - `ascc correlate`: a recognised scanner file that its parser cannot read
-  (for example current Prowler OCSF or open-source Checkov output, see
+  (for example open-source Checkov output, see
   `fixtures/leaky_data_lake/README.md`) exited with an uncaught traceback and
   code 1, the code reserved for findings. It now exits 70 (`INTERNAL`) with
   the file and scanner named on stderr, and writes no SARIF and no store.
@@ -35,6 +35,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
   Checkov, Prowler and Trivy parsers read their file as UTF-8 whatever the
   locale; under an ASCII locale, valid output with non-ASCII text exited 70.
   Checked by `tests/test_cli_input_files.py`.
+- Prowler: current OCSF output, where `finding_info.created_time` is epoch
+  seconds, is read; it stopped every run with exit 70 (`TypeError`). The ISO
+  8601 string of older output still works; both give an aware UTC start time.
+  Checked by `tests/test_prowler_real_output.py`.
 - Tests: the CLI console width is pinned for every test (`tests/conftest.py`),
   so tests that assert on printed lines no longer depend on the terminal they
   run in. Checked by `tests/test_console_width.py`.
