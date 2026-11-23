@@ -10,33 +10,24 @@ the output of a real scan.
 - Every value (ARNs, resource IDs, finding IDs, CVEs, descriptions) is
   invented. The account ID `123456789012` is the placeholder AWS uses in its
   documentation.
-- The field layout follows what ASCC's parsers read when the fixture was
-  written. It is not a verified copy of real scanner output; the next section
-  lists where it differs.
+- The field layout is the layout of real scanner output: every JSON path in
+  the three files also appears in `fixtures/leaky_data_lake_real/`, and
+  `tests/test_fixture_layout.py` fails if one does not. The one exception is
+  the Trivy CVE fields: the real filesystem scan found no CVE, so they cannot
+  be compared yet.
 
-## How close it is to real scanner output
+## Real scanner output
 
-Compared field by field with one run against a real AWS account on
+`fixtures/leaky_data_lake_real/` holds one run against a real AWS account on
 2026-10-30: Prowler version 5.46.0 (OCSF 1.5.0), Checkov version 3.3.30,
-Trivy version 0.76.1. "Field" means a JSON path, with list positions
-collapsed.
-
-| Scanner | Fields in the fixture | Also in real output | What differs |
-|---|---|---|---|
-| Prowler | 52 | 36 | Resource attributes: the fixture keeps them flat in `resources[].data` (`security_groups`, `iam_instance_profile_arn`, `public_ip`, `inline_policy_actions`, `inline_policy_resources`, `ip_permissions`, `acl`, `public_access_block`, `server_side_encryption`, `logging_enabled`) and tags in `resources[].tags[]`; real output nests them under `resources[].data.metadata` with other names (for example `ingress_rules`, `inline_policies`, `encryption`, `logging`, `tags`). `finding_info.product_uid` and `compliance.status` are absent. `finding_info.created_time` is a string in the fixture and an integer in real output. |
-| Checkov | 21 | 21 | Same paths, but `severity` and `resource_address` are `null` in all 22 real failed checks. |
-| Trivy | 50 | 28 | `Misconfigurations[].AVDID` and `MisconfSummary.Exceptions` are absent. The 20 vulnerability fields cannot be compared: the real filesystem scan found no CVEs. |
-
-What this means for the demo: every current parser reads the real output in
-`fixtures/leaky_data_lake_real/`. Parsers that still stop on real output:
+Trivy version 0.76.1. Every current parser reads it. Parsers that still stop on real output:
 none. Checkov's `null` severity is reported as unknown. Its
 `resource_address` is empty, so the Terraform address comes from `resource`:
 11 of 22 real Checkov findings resolve to a resource; the rest sit on
 Terraform types ASCC does not map yet, and the CLI counts them. The graph
 reads both layouts: on the real output it finds one chain, security group ->
 instance -> role -> bucket, 3 hops, confidence 0.6; the role's `*/*` inline
-policy also draws 21 `can_access` edges, an upper bound on access. This
-section goes away when a test pins every fixture field to real output.
+policy also draws 21 `can_access` edges, an upper bound on access.
 
 ## Scenario
 
@@ -60,10 +51,10 @@ unencrypted, has no access logging and is tagged `DataClassification=PII`.
 
 | Resource | Trivy | Prowler | Checkov |
 |---|---|---|---|
-| S3 bucket `datalake-raw` | 1 misconfiguration: no encryption (`AVD-AWS-0028`) | 3: public access, no default encryption, no access logging | 3: `CKV_AWS_20`, `CKV_AWS_19`, `CKV_AWS_18` |
+| S3 bucket `datalake-raw` | 1 misconfiguration: no encryption (`AWS-0028`) | 3: public access, no default encryption, no access logging | 3: `CKV_AWS_20`, `CKV_AWS_19`, `CKV_AWS_18` |
 | EC2 `datalake-etl` | 4 CVEs in installed packages, including the critical Log4Shell | 1: public IP | — |
 | IAM role `datalake-etl-role` | — | 1: administrative inline policy | 1: `CKV_AWS_40` |
-| Security group `datalake-etl-sg` | 1 misconfiguration: ingress `0.0.0.0/0` to port 22 (`AVD-AWS-0107`) | 1: SSH open to the internet | — |
+| Security group `datalake-etl-sg` | 1 misconfiguration: ingress `0.0.0.0/0` to port 22 (`AWS-0107`) | 1: SSH open to the internet | — |
 
 16 findings: Trivy 6, Prowler 6, Checkov 4. Each resource is reported by at
 least two scanners, under different identifiers (ARN, Terraform address,

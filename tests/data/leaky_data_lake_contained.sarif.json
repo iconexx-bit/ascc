@@ -56,7 +56,7 @@
                 ],
                 "entry_findings": [
                   "prowler:ec2_securitygroup_allow_ingress_from_internet_to_port_22",
-                  "trivy:AVD-AWS-0107"
+                  "trivy:AWS-0107"
                 ],
                 "key": "aws:ec2:security-group:sg-0f9e8d7c6b5a43210",
                 "members": [
@@ -492,14 +492,14 @@
             "text": "S3 Bucket does not have encryption enabled"
           },
           "partialFingerprints": {
-            "asccDedupKey/v1": "ce57efdffc16360a09e6d95164a194d346a84d80dcfb16cf6b18e9a7973608ba"
+            "asccDedupKey/v1": "b3c33976fc7674fc3d4932b599f8abab8b3ba5dc2effa9ea037bc0ae65866c96"
           },
           "properties": {
             "chain_ids": [
               "chain-c1786ed3ae49"
             ]
           },
-          "ruleId": "trivy/AVD-AWS-0028"
+          "ruleId": "trivy/AWS-0028"
         },
         {
           "level": "error",
@@ -516,7 +516,7 @@
             "text": "An ingress security group rule allows traffic from /0"
           },
           "partialFingerprints": {
-            "asccDedupKey/v1": "0d3f6ba05b3642d2d5c57cc900d96e034cf74f6005fa4000956ef828c842f4ed"
+            "asccDedupKey/v1": "8d27f082bd339389441c0cfacdaa6913a0e3aacfe9d037919ad2ee13962b1fc0"
           },
           "properties": {
             "chain_ids": [
@@ -527,7 +527,7 @@
               "aws:ec2:security-group:sg-0f9e8d7c6b5a43210"
             ]
           },
-          "ruleId": "trivy/AVD-AWS-0107"
+          "ruleId": "trivy/AWS-0107"
         },
         {
           "level": "error",
@@ -727,7 +727,7 @@
               }
             },
             {
-              "id": "trivy/AVD-AWS-0028",
+              "id": "trivy/AWS-0028",
               "properties": {
                 "ascc/category": "encryption_at_rest",
                 "ascc/level": "error",
@@ -735,7 +735,7 @@
               }
             },
             {
-              "id": "trivy/AVD-AWS-0107",
+              "id": "trivy/AWS-0107",
               "properties": {
                 "ascc/category": "network_exposure",
                 "ascc/level": "error",
