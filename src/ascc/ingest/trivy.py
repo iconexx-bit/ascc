@@ -11,9 +11,11 @@ from ascc.schema.taxonomy import Category, Severity
 
 from .base import ScannerParser
 
+# Keyed without the "AVD-" prefix: Trivy 0.76 reports ID "AWS-NNNN" and no
+# AVDID, older output AVDID "AVD-AWS-NNNN" (CLAUDE.md, Contracts).
 _MISCONFIG_CATEGORY: dict[str, Category] = {
-    "AVD-AWS-0028": Category.ENCRYPTION_AT_REST,
-    "AVD-AWS-0107": Category.NETWORK_EXPOSURE,
+    "AWS-0028": Category.ENCRYPTION_AT_REST,
+    "AWS-0107": Category.NETWORK_EXPOSURE,
 }
 
 _FRACTIONAL_SECONDS_RE = re.compile(r"(\.\d{6})\d*Z$")
@@ -102,7 +104,7 @@ class TrivyParser(ScannerParser):
         return Finding(
             scanner=self.scanner_name,
             rule_id=rule_id,
-            category=_MISCONFIG_CATEGORY.get(rule_id, Category.UNCATEGORIZED),
+            category=_MISCONFIG_CATEGORY.get(rule_id.removeprefix("AVD-"), Category.UNCATEGORIZED),
             severity=Severity.from_severity_string(misconfig["Severity"]),
             title=misconfig["Title"],
             resource_ids=[str(resolution.key)] if resolution else [],

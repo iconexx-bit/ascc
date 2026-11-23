@@ -486,6 +486,7 @@ while it held.
 - Ingest: Prowler `finding_info.created_time` is epoch seconds (current OCSF output) or an ISO 8601 string (older output, the synthetic fixture); both become an aware UTC `started_at`. Pinned by tests/test_prowler_real_output.py.
 - Ingest: A severity the scanner did not give is `UNKNOWN`, never INFO: Checkov `null` (open-source Checkov without a platform API key), the Trivy string `UNKNOWN`, OCSF `severity_id` 0 (Unknown) and 99 (Other), and any value ASCC does not recognise; a severity that is neither a string nor null is a format error (exit 70). In SARIF the result is `warning` (the check failed; `none` would say it did not) and the rule carries `ascc/severity: unknown` and no `security-severity`, so no score appears that the scanner never gave. Pinned by tests/test_severity_unknown.py.
 - Ingest: Checkov `resource_address` is null in open-source output; the Terraform address is then taken from `resource` (`resource_address` wins when present). The CLI prints `Findings tied to no resource: N (scanner n, ...)` when any finding resolved to no resource key, and nothing otherwise. Pinned by tests/test_checkov_real_output.py.
+- Ingest: Trivy 0.76 misconfigurations carry `ID` (`AWS-NNNN`) and no `AVDID`; the category lookup ignores the `AVD-` prefix, and `rule_id` stays as the scanner gave it (fingerprints unchanged). Pinned by tests/test_trivy_real_output.py.
 
 ## Determinism
 
