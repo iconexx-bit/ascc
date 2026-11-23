@@ -29,9 +29,11 @@ collapsed.
 
 What this means for the demo: every current parser reads the real output in
 `fixtures/leaky_data_lake_real/`. Parsers that still stop on real output:
-none. Checkov's `null` severity is reported as unknown, and with
-`resource_address` empty its findings are not yet tied to a resource. The
-graph found none of the Prowler resource attributes it builds edges from and
+none. Checkov's `null` severity is reported as unknown. Its
+`resource_address` is empty, so the Terraform address comes from `resource`:
+11 of 22 real Checkov findings resolve to a resource; the rest sit on
+Terraform types ASCC does not map yet, and the CLI counts them. The graph
+found none of the Prowler resource attributes it builds edges from and
 drew no edges. The demo shows what ASCC does with input laid out like this
 fixture, not yet what it does with current scanner output. A graph that reads
 real output is planned for v0.4.0; this section goes away when a test pins

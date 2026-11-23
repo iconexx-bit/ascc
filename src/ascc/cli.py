@@ -1,6 +1,7 @@
 import json
 import os
 import tempfile
+from collections import Counter
 from datetime import UTC, datetime
 from enum import IntEnum
 from pathlib import Path
@@ -180,6 +181,14 @@ def correlate(
     )
     for name, reason in skipped:
         console.print(f"[yellow]Skipping {name}: {reason}[/yellow]")
+    # A finding no resource key was resolved for correlates with nothing;
+    # say so instead of letting it vanish from the picture (CLAUDE.md, Contracts).
+    unbound = Counter(f.scanner for run in scan_runs for f in run.findings if not f.resource_ids)
+    if unbound:
+        by_scanner = ", ".join(f"{name} {count}" for name, count in sorted(unbound.items()))
+        console.print(
+            f"[yellow]Findings tied to no resource: {sum(unbound.values())} ({by_scanner})[/yellow]"
+        )
 
     now = _now()
 

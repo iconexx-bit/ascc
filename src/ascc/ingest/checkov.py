@@ -40,7 +40,9 @@ class CheckovParser(ScannerParser):
         rule_id = check["check_id"]
         resource_ids: list[str] = []
         resolutions: list[Resolution] = []
-        address = check.get("resource_address")
+        # Open-source Checkov leaves resource_address null; the Terraform
+        # address is then in resource (CLAUDE.md, Contracts).
+        address = check.get("resource_address") or check.get("resource")
         if address:
             ref = ResourceRef(scheme=RefScheme.TERRAFORM, value=address, scanner=self.scanner_name)
             resolution = resolve(ref)
