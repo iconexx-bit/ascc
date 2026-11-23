@@ -60,6 +60,10 @@ fixtures/leaky_data_lake/ — эталонный сценарий:
 - trivy.json, prowler.json, checkov.json — сырые выводы трёх сканеров
 - README.md — описание сценария, читай его перед работой с фикстурами
 
+fixtures/leaky_data_lake_real/ — real scanner output (AWS spike run 2, 2026-10-30), sanitised and trimmed; its README says what was replaced and what was kept. Pinned by tests/test_real_fixture.py.
+
+No tracked file carries a real AWS account ID or a real home directory. Account IDs are 123456789012 (the lab account) and 111122223333 (an account that AWS-managed roles trust), both AWS documentation placeholders; a home directory is /home/user. Sanitise scanner output and evidence before committing them, file names included. Pinned by tests/test_repo_hygiene.py.
+
 Фикстуры лежат в корне, не в tests/fixtures/ — tests/ их читает, но не владеет ими.
 
 ## Архитектурные решения — приняты, не пересматривать

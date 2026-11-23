@@ -5,6 +5,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ## [Unreleased]
 
+### Added
+
+- `fixtures/leaky_data_lake_real/`: real output of Prowler 5.46.0, Trivy
+  0.76.1 and Checkov 3.3.30 from an AWS run of the Leaky Data Lake scenario,
+  sanitised and trimmed; its README says what was replaced and what was kept.
+  Checked by `tests/test_real_fixture.py`.
+- `tests/test_repo_hygiene.py`: no tracked file, file names included, may
+  carry an AWS account ID other than the documented placeholders or a home
+  directory other than `/home/user`. `tests/data/synthetic.sarif.json` now
+  uses `/home/user`.
+
 ### Fixed
 
 - `ascc correlate`: a recognised scanner file that its parser cannot read

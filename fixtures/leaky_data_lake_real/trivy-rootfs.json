@@ -1,0 +1,177 @@
+{
+  "SchemaVersion": 2,
+  "Trivy": {
+    "Version": "0.76.1"
+  },
+  "ReportID": "01a18b72-45fd-7e34-bbcc-abac595fdac7",
+  "CreatedAt": "2026-10-30T06:14:44.477933694Z",
+  "ArtifactName": "ip-172-31-4-37.us-east-2.compute.internal",
+  "ArtifactType": "filesystem",
+  "Metadata": {
+    "OS": {
+      "Family": "amazon",
+      "Name": "2023.12.20261029 (Amazon Linux)"
+    }
+  },
+  "Results": [
+    {
+      "Target": "ip-172-31-4-37.us-east-2.compute.internal (amazon 2023.12.20261029 (Amazon Linux))",
+      "Class": "os-pkgs",
+      "Type": "amazon",
+      "Packages": [
+        {
+          "ID": "acl@2.4.0-1.amzn2023.0.1.x86_64",
+          "Name": "acl",
+          "Identifier": {
+            "PURL": "pkg:rpm/amazon/acl@2.4.0-1.amzn2023.0.1?arch=x86_64\u0026distro=amazon-2023.12.20261029%20%28Amazon%20Linux%29",
+            "UID": "1e8b089720796c99"
+          },
+          "Version": "2.4.0",
+          "Release": "1.amzn2023.0.1",
+          "Arch": "x86_64",
+          "SrcName": "acl",
+          "SrcVersion": "2.4.0",
+          "SrcRelease": "1.amzn2023.0.1",
+          "Licenses": [
+            "GPL-2.0-or-later AND LGPL-2.1-or-later"
+          ],
+          "Maintainer": "Amazon Linux",
+          "Repository": {
+            "Class": "official"
+          },
+          "DependsOn": [
+            "glibc@2.34-231.amzn2023.0.5.x86_64",
+            "libacl@2.4.0-1.amzn2023.0.1.x86_64"
+          ],
+          "Digest": "md5:9244150f0ddf6e046735d9e1999a24e4",
+          "InstalledFiles": [
+            "/usr/bin/chacl",
+            "/usr/bin/getfacl",
+            "/usr/bin/setfacl",
+            "/usr/lib/.build-id",
+            "/usr/lib/.build-id/18",
+            "/usr/lib/.build-id/18/099d8b7ee1811d193b0c2585138f3ad88f1d1b",
+            "/usr/lib/.build-id/55",
+            "/usr/lib/.build-id/55/fa2745b5aaa50778a6340d0ad9737183e9623e",
+            "/usr/lib/.build-id/cf",
+            "/usr/lib/.build-id/cf/3bf57a66cc306e056e6d4fbc28692ee018a07e",
+            "/usr/share/licenses/acl",
+            "/usr/share/licenses/acl/COPYING",
+            "/usr/share/licenses/acl/COPYING.LGPL",
+            "/usr/share/locale/de/LC_MESSAGES/acl.mo",
+            "/usr/share/locale/en@boldquot/LC_MESSAGES/acl.mo",
+            "/usr/share/locale/en@quot/LC_MESSAGES/acl.mo",
+            "/usr/share/locale/es/LC_MESSAGES/acl.mo",
+            "/usr/share/locale/fr/LC_MESSAGES/acl.mo",
+            "/usr/share/locale/gl/LC_MESSAGES/acl.mo",
+            "/usr/share/locale/ka/LC_MESSAGES/acl.mo",
+            "/usr/share/locale/pl/LC_MESSAGES/acl.mo",
+            "/usr/share/locale/sv/LC_MESSAGES/acl.mo",
+            "/usr/share/man/man1/chacl.1.gz",
+            "/usr/share/man/man1/getfacl.1.gz",
+            "/usr/share/man/man1/setfacl.1.gz",
+            "/usr/share/man/man5/acl.5.gz"
+          ],
+          "AnalyzedBy": "rpm"
+        },
+        {
+          "ID": "acpid@2.0.32-4.amzn2023.0.3.x86_64",
+          "Name": "acpid",
+          "Identifier": {
+            "PURL": "pkg:rpm/amazon/acpid@2.0.32-4.amzn2023.0.3?arch=x86_64\u0026distro=amazon-2023.12.20261029%20%28Amazon%20Linux%29",
+            "UID": "117c767f3e91c66"
+          },
+          "Version": "2.0.32",
+          "Release": "4.amzn2023.0.3",
+          "Arch": "x86_64",
+          "SrcName": "acpid",
+          "SrcVersion": "2.0.32",
+          "SrcRelease": "4.amzn2023.0.3",
+          "Licenses": [
+            "GPLv2+"
+          ],
+          "Maintainer": "Amazon Linux",
+          "Repository": {
+            "Class": "official"
+          },
+          "DependsOn": [
+            "bash@5.2.15-1.amzn2023.0.2.x86_64",
+            "glibc@2.34-231.amzn2023.0.5.x86_64",
+            "systemd@252.23-15.amzn2023.x86_64"
+          ],
+          "Digest": "md5:238335570cb236a74c1499f0af9efc83",
+          "InstalledFiles": [
+            "/etc/acpi",
+            "/etc/acpi/actions",
+            "/etc/acpi/actions/power.sh",
+            "/etc/acpi/events",
+            "/etc/acpi/events/powerconf",
+            "/etc/acpi/events/videoconf",
+            "/etc/sysconfig/acpid",
+            "/usr/bin/acpi_listen",
+            "/usr/lib/.build-id",
+            "/usr/lib/.build-id/cf",
+            "/usr/lib/.build-id/cf/da2d87f5d0ee64ada03d6054d097851ce5f5a5",
+            "/usr/lib/.build-id/d3",
+            "/usr/lib/.build-id/d3/1ff92d9057e1b83992759864546107a7a72401",
+            "/usr/lib/.build-id/e4",
+            "/usr/lib/.build-id/e4/2ab8335734ebc8cf46e609f6747d1056263b40",
+            "/usr/lib/systemd/system/acpid.service",
+            "/usr/lib/systemd/system/acpid.socket",
+            "/usr/sbin/acpid",
+            "/usr/sbin/kacpimon",
+            "/usr/share/doc/acpid",
+            "/usr/share/doc/acpid/COPYING",
+            "/usr/share/doc/acpid/Changelog",
+            "/usr/share/doc/acpid/README",
+            "/usr/share/doc/acpid/TESTPLAN",
+            "/usr/share/doc/acpid/TODO",
+            "/usr/share/man/man8/acpi_listen.8.gz",
+            "/usr/share/man/man8/acpid.8.gz",
+            "/usr/share/man/man8/kacpimon.8.gz"
+          ],
+          "AnalyzedBy": "rpm"
+        },
+        {
+          "ID": "alternatives@1.15-2.amzn2023.0.2.x86_64",
+          "Name": "alternatives",
+          "Identifier": {
+            "PURL": "pkg:rpm/amazon/alternatives@1.15-2.amzn2023.0.2?arch=x86_64\u0026distro=amazon-2023.12.20261029%20%28Amazon%20Linux%29",
+            "UID": "a8a607f213b76974"
+          },
+          "Version": "1.15",
+          "Release": "2.amzn2023.0.2",
+          "Arch": "x86_64",
+          "SrcName": "chkconfig",
+          "SrcVersion": "1.15",
+          "SrcRelease": "2.amzn2023.0.2",
+          "Licenses": [
+            "GPLv2"
+          ],
+          "Maintainer": "Amazon Linux",
+          "Repository": {
+            "Class": "official"
+          },
+          "DependsOn": [
+            "glibc@2.34-231.amzn2023.0.5.x86_64"
+          ],
+          "Digest": "md5:ae9e7189dd33660caa47ccbecfde2d36",
+          "InstalledFiles": [
+            "/etc/alternatives",
+            "/usr/lib/.build-id",
+            "/usr/lib/.build-id/7d",
+            "/usr/lib/.build-id/7d/66d29f15a43d20d1bb88a962b9566c1c27b544",
+            "/usr/sbin/alternatives",
+            "/usr/sbin/update-alternatives",
+            "/usr/share/licenses/alternatives",
+            "/usr/share/licenses/alternatives/COPYING",
+            "/usr/share/man/man8/alternatives.8.gz",
+            "/usr/share/man/man8/update-alternatives.8.gz",
+            "/var/lib/alternatives"
+          ],
+          "AnalyzedBy": "rpm"
+        }
+      ]
+    }
+  ]
+}
