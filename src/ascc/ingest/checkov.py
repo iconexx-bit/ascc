@@ -28,7 +28,7 @@ class CheckovParser(ScannerParser):
 
     def parse(self, path: str | Path) -> ScanRun:
         path = Path(path)
-        data = json.loads(path.read_text())
+        data = json.loads(path.read_text(encoding="utf-8"))
         resources: dict[str, Resource] = {}
         findings = [
             self._finding(check, resources)

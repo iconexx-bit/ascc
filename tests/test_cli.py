@@ -13,11 +13,16 @@ runner = CliRunner()
 
 @pytest.fixture(scope="module")
 def result(fixtures_dir: Path):
+    old = os.environ.get("ASCC_CONSOLE_WIDTH")
     os.environ["ASCC_CONSOLE_WIDTH"] = "200"
     try:
         return runner.invoke(app, ["correlate", "--input", str(fixtures_dir)])
     finally:
-        os.environ.pop("ASCC_CONSOLE_WIDTH", None)
+        # Restore, do not drop: the value may come from the caller (conftest.py).
+        if old is None:
+            os.environ.pop("ASCC_CONSOLE_WIDTH", None)
+        else:
+            os.environ["ASCC_CONSOLE_WIDTH"] = old
 
 
 def test_exit_code_zero(result) -> None:

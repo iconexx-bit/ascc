@@ -6,6 +6,10 @@ An input directory holds whatever a scan left behind.
   RFC 8259). It is skipped with the line used for any file that is not valid
   JSON, and the run goes on. The skip hides no scanner failure: nothing in
   such a file identifies it as scanner output.
+- JSON nested deeper than the interpreter can parse (RecursionError) is not
+  scanner output either, and is skipped the same way.
+- A scanner file is read as UTF-8 whatever the locale, so valid output with
+  non-ASCII text is read, not refused.
 - A file the CLI cannot read (OSError), or whose scanner it cannot tell apart
   (two parsers match it), may be scanner output. It stops the run with
   INTERNAL, names the file, and writes nothing.
@@ -89,17 +93,37 @@ def test_only_non_utf8_file_ends_in_no_input(tmp_path: Path) -> None:
     assert "Traceback" not in proc.stderr + proc.stdout, proc.stderr
 
 
-def test_valid_utf8_json_is_not_called_invalid_under_an_ascii_locale(tmp_path: Path) -> None:
+def test_valid_utf8_json_is_read_under_an_ascii_locale(tmp_path: Path) -> None:
     inputs = _copy_fixture(tmp_path)
     trivy = inputs / "trivy.json"
     text = trivy.read_text(encoding="utf-8")
     assert '"Title": "' in text
     trivy.write_text(text.replace('"Title": "', '"Title": "\u00e9 ', 1), encoding="utf-8")
-    proc = _run("--input", str(inputs), env=ASCII_LOCALE)
+    # The other two parsers get non-ASCII text too; rc 0 means all three read it.
+    for name, key in (("checkov.json", '"check_name": "'), ("prowler.json", '"class_name": "')):
+        other = inputs / name
+        body = other.read_text(encoding="utf-8")
+        assert key in body, name
+        other.write_text(body.replace(key, key + "\u00e9 ", 1), encoding="utf-8")
+    sarif = tmp_path / "out.sarif.json"
+    proc = _run("--input", str(inputs), "--output", str(sarif), env=ASCII_LOCALE)
     out = proc.stdout + proc.stderr
-    assert "Traceback" not in out, out
+    assert proc.returncode == 0, f"rc={proc.returncode}\n{out}"
     assert "Skipping trivy.json" not in out, out
-    assert proc.returncode in (0, EXIT_INTERNAL), f"rc={proc.returncode}\n{out}"
+    assert "\u00e9 " in sarif.read_text(encoding="utf-8")
+
+
+def test_json_nested_too_deep_is_skipped_as_not_valid_json(tmp_path: Path) -> None:
+    clean = _copy_fixture(tmp_path, "clean")
+    with_deep = _copy_fixture(tmp_path, "with-deep")
+    (with_deep / "deep.json").write_text("[" * 200_000, encoding="utf-8")
+    want, got = tmp_path / "want.sarif.json", tmp_path / "got.sarif.json"
+    base = _run("--input", str(clean), "--output", str(want))
+    proc = _run("--input", str(with_deep), "--output", str(got))
+    assert base.returncode == 0, base.stderr
+    assert proc.returncode == 0, f"rc={proc.returncode}\n{proc.stderr[-2000:]}"
+    assert "Skipping deep.json: not valid JSON" in proc.stdout, proc.stdout
+    assert got.read_bytes() == want.read_bytes()
 
 
 @pytest.mark.skipif(
@@ -141,3 +165,5 @@ def test_contract_is_written_down() -> None:
         "an input file that cannot be read or whose scanner cannot be told apart stops the run"
         in text
     )
+    assert "JSON nested too deep to parse counts as not valid JSON" in text
+    assert "scanner files are read as UTF-8 whatever the locale" in text

@@ -30,6 +30,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
   cannot be told apart (two parsers match it), exits 70 (`INTERNAL`) with the
   file named on stderr, and writes no SARIF and no store.
   Checked by `tests/test_cli_input_files.py`.
+- `ascc correlate`: JSON nested deeper than the interpreter can parse exited
+  with a traceback and code 1; it is now skipped with `not valid JSON`. The
+  Checkov, Prowler and Trivy parsers read their file as UTF-8 whatever the
+  locale; under an ASCII locale, valid output with non-ASCII text exited 70.
+  Checked by `tests/test_cli_input_files.py`.
+- Tests: the CLI console width is pinned for every test (`tests/conftest.py`),
+  so tests that assert on printed lines no longer depend on the terminal they
+  run in. Checked by `tests/test_console_width.py`.
 
 ### Documentation
 

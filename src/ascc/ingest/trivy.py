@@ -35,7 +35,7 @@ class TrivyParser(ScannerParser):
 
     def parse(self, path: str | Path) -> ScanRun:
         path = Path(path)
-        data = json.loads(path.read_text())
+        data = json.loads(path.read_text(encoding="utf-8"))
         host = self._resolve_host(data)
         resources: dict[str, Resource] = {}
         findings: list[Finding] = []
