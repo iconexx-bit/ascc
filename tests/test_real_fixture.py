@@ -43,20 +43,19 @@ def test_no_sanitising_marker_is_left(name: str) -> None:
 
 
 def test_readme_names_the_tool_versions() -> None:
-    prowler = {f["metadata"]["product"]["version"] for f in _load("prowler.json")}
-    trivy = {_load(n)["Trivy"]["Version"] for n in ("trivy-config.json", "trivy-rootfs.json")}
+    # One version per tool: unpacking fails loudly if the files disagree.
+    (prowler,) = {f["metadata"]["product"]["version"] for f in _load("prowler.json")}
+    (trivy,) = {_load(n)["Trivy"]["Version"] for n in ("trivy-config.json", "trivy-rootfs.json")}
     checkov = _load("checkov.json")["summary"]["checkov_version"]
-    assert len(prowler) == 1 and len(trivy) == 1
     text = _readme()
-    assert f"Prowler {prowler.pop()}" in text
-    assert f"Trivy {trivy.pop()}" in text
+    assert f"Prowler {prowler}" in text
+    assert f"Trivy {trivy}" in text
     assert f"Checkov {checkov}" in text
 
 
 def test_readme_names_the_region() -> None:
-    regions = {f["cloud"]["region"] for f in _load("prowler.json")}
-    assert len(regions) == 1
-    assert f"`{regions.pop()}`" in _readme()
+    (region,) = {f["cloud"]["region"] for f in _load("prowler.json")}
+    assert f"`{region}`" in _readme()
 
 
 def test_prowler_records_match_the_readme() -> None:
