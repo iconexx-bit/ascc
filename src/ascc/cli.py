@@ -137,7 +137,9 @@ def correlate(
             raise typer.Exit(code=ExitCode.INTERNAL) from None
         try:
             data = json.loads(text)
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, RecursionError):
+            # Nesting deeper than the interpreter can parse is not scanner
+            # output either: skipped like any file that is not JSON.
             skipped.append((file.name, "not valid JSON"))
             continue
         try:

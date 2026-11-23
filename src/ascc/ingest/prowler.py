@@ -52,7 +52,7 @@ class ProwlerParser(ScannerParser):
 
     def parse(self, path: str | Path) -> ScanRun:
         path = Path(path)
-        entries = json.loads(path.read_text())
+        entries = json.loads(path.read_text(encoding="utf-8"))
         started_at = min(_parse_timestamp(e["finding_info"]["created_time"]) for e in entries)
         resources: dict[str, Resource] = {}
         bridge_facts: list[BridgeFact] = []
