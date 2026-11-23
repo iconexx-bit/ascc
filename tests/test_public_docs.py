@@ -3,8 +3,8 @@
 The repository is English-language. Tracked markdown files a visitor reads (top
 level, .github/, docs/, fixtures/) carry no Cyrillic; CLAUDE.md is the agent's
 working contract and is exempt, and git-ignored local files are not public. The Leaky Data Lake fixture README must say that the
-fixture is synthetic and not a verified copy of real scanner output, keep the
-section that lists where it differs from real output, carry the same funnel line as the README demo (which tests/test_readme_demo.py pins to
+fixture is synthetic (its field layout is pinned to real output by
+tests/test_fixture_layout.py), carry the same funnel line as the README demo (which tests/test_readme_demo.py pins to
 the code), and count findings per scanner as the fixture files do. SECURITY.md
 must not claim that the project has no releases.
 """
@@ -61,8 +61,6 @@ def test_public_markdown_is_english() -> None:
 def test_fixture_readme_says_it_is_synthetic() -> None:
     text = _flat((FIXTURE / "README.md").read_text(encoding="utf-8"))
     assert "synthetic" in text
-    assert "not a verified copy of real scanner output" in text
-    assert "## How close it is to real scanner output" in text
 
 
 def _parsers_that_stop_on_real_output() -> set[str]:

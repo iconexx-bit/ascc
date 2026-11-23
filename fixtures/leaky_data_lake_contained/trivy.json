@@ -144,14 +144,12 @@
       "Type": "terraform",
       "MisconfSummary": {
         "Successes": 6,
-        "Failures": 2,
-        "Exceptions": 0
+        "Failures": 2
       },
       "Misconfigurations": [
         {
           "Type": "Terraform Security Check",
-          "ID": "AVD-AWS-0028",
-          "AVDID": "AVD-AWS-0028",
+          "ID": "AWS-0028",
           "Title": "S3 Bucket does not have encryption enabled",
           "Description": "S3 Buckets should be encrypted with customer managed KMS keys and not default AWS managed keys, in order to allow granular control over access to specific buckets.",
           "Message": "Bucket does not have encryption enabled",
@@ -175,8 +173,7 @@
         },
         {
           "Type": "Terraform Security Check",
-          "ID": "AVD-AWS-0107",
-          "AVDID": "AVD-AWS-0107",
+          "ID": "AWS-0107",
           "Title": "An ingress security group rule allows traffic from /0",
           "Description": "Opening up ports to the public internet is generally to be avoided. You should restrict access to IP addresses or ranges that explicitly require it where possible.",
           "Message": "Security group rule allows ingress from public internet (0.0.0.0/0) to port 22",

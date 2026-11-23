@@ -1,7 +1,7 @@
 """ProwlerParser reads current Prowler output (OCSF, Prowler 5.46.0).
 
 Current OCSF output carries `finding_info.created_time` as epoch seconds (an
-integer); older output and the synthetic fixture carry an ISO 8601 string.
+integer), as does the synthetic fixture; older output carries an ISO 8601 string.
 Both become an aware UTC `started_at`. Before this, the integer ended in
 `TypeError` inside `datetime.fromisoformat`, and the CLI stopped with exit 70
 on every real Prowler file (tests/test_cli_parse_errors.py pins that boundary).
@@ -40,11 +40,16 @@ def test_epoch_created_time_becomes_utc_started_at() -> None:
     assert started_at is not None and started_at.utcoffset() == timedelta(0)
 
 
-def test_iso_created_time_still_parses() -> None:
-    first = min(
-        datetime.fromisoformat(e["finding_info"]["created_time"]) for e in _entries(SYNTHETIC)
-    )
-    assert ProwlerParser().parse(SYNTHETIC).started_at == first
+def test_iso_created_time_still_parses(tmp_path: Path) -> None:
+    entries = _entries(SYNTHETIC)
+    assert all(isinstance(e["finding_info"]["created_time"], int) for e in entries)
+    for entry in entries:
+        epoch = entry["finding_info"]["created_time"]
+        entry["finding_info"]["created_time"] = datetime.fromtimestamp(epoch, tz=UTC).isoformat()
+    older = tmp_path / "prowler.json"
+    older.write_text(json.dumps(entries), encoding="utf-8")
+    first = min(datetime.fromisoformat(e["finding_info"]["created_time"]) for e in entries)
+    assert ProwlerParser().parse(older).started_at == first
 
 
 def test_cli_reads_the_real_prowler_file(tmp_path: Path) -> None:

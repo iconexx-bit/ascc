@@ -105,7 +105,7 @@ def test_nodes_are_clusters_not_raw_keys(fixture_run: CorrelationRun) -> None:
     assert "aws:ec2:security-group:datalake-etl-sg" in {str(k) for k in sg.members}
     [cluster] = [c for c in fixture_run.clusters if sg.key in c.keys]
     assert sg.key == cluster.representative()
-    assert {"trivy:AVD-AWS-0107"} <= set(sg.entry_findings)
+    assert {"trivy:AWS-0107"} <= set(sg.entry_findings)
     assert _node_of(g, BUCKET).tags.get("DataClassification") == "PII"
     assert _node_of(g, ROLE).accounts == frozenset({"123456789012"})
 
@@ -141,11 +141,9 @@ def test_role_name_mismatch_breaks_the_chain(fixtures_dir: Path, tmp_path: Path)
     hits = 0
     for entry in doc:
         for res in entry["resources"]:
-            data = res.get("data") or {}
-            if "iam_instance_profile_arn" in data:
-                data["iam_instance_profile_arn"] = data["iam_instance_profile_arn"].replace(
-                    "datalake-etl-role", "other-profile"
-                )
+            profile = ((res.get("data") or {}).get("metadata") or {}).get("instance_profile")
+            if profile:
+                profile["Arn"] = profile["Arn"].replace("datalake-etl-role", "other-profile")
                 hits += 1
     assert hits == 1
     g = build_graph(correlate(_runs(fixtures_dir, prowler_doc=doc, tmp=tmp_path)))
@@ -229,11 +227,9 @@ def test_profile_in_another_account_assumes_nothing(fixtures_dir: Path, tmp_path
         n = 0
         for entry in doc:
             for res in entry["resources"]:
-                data = res.get("data") or {}
-                if "iam_instance_profile_arn" in data:
-                    data["iam_instance_profile_arn"] = data["iam_instance_profile_arn"].replace(
-                        "123456789012", "999999999999"
-                    )
+                profile = ((res.get("data") or {}).get("metadata") or {}).get("instance_profile")
+                if profile:
+                    profile["Arn"] = profile["Arn"].replace("123456789012", "999999999999")
                     n += 1
         return n
 
@@ -250,10 +246,11 @@ def test_wildcard_needs_both_action_and_resource_star(fixtures_dir: Path, tmp_pa
         n = 0
         for entry in doc:
             for res in entry["resources"]:
-                data = res.get("data") or {}
-                if data.get("inline_policy_resources") == ["*"]:
-                    data["inline_policy_resources"] = ["arn:aws:s3:::other-bucket/*"]
-                    n += 1
+                metadata = (res.get("data") or {}).get("metadata") or {}
+                for statement in (metadata.get("document") or {}).get("Statement", []):
+                    if statement.get("Resource") == "*":
+                        statement["Resource"] = "arn:aws:s3:::other-bucket/*"
+                        n += 1
         return n
 
     g = build_graph(_mutated(fixtures_dir, tmp_path, mutate))

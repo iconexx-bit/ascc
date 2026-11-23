@@ -169,7 +169,7 @@ def test_populated_store_exposes_ghost_membership_in_sarif(tmp_path: Path) -> No
         "aws:ec2:instance:i-0a1b2c3d4e5f67890",
     ]
 
-    ssh_open = next(r for r in results if "AVD-AWS-0107" in r["ruleId"])
+    ssh_open = next(r for r in results if r["ruleId"] == "trivy/AWS-0107")
     assert ssh_open["properties"]["ghost_members"] == [
         "aws:ec2:security-group:sg-0f9e8d7c6b5a43210"
     ]

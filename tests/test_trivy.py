@@ -33,7 +33,7 @@ def test_cve_findings_bind_to_host_with_heuristic_confidence(scan_run: ScanRun) 
 
 
 def test_bucket_misconfig_is_deterministic(scan_run: ScanRun) -> None:
-    finding = next(f for f in scan_run.findings if f.rule_id == "AVD-AWS-0028")
+    finding = next(f for f in scan_run.findings if f.rule_id == "AWS-0028")
     assert finding.resource_ids == ["aws:s3:bucket:datalake-raw"]
     assert finding.min_confidence == 1.0
     assert finding.resolutions[0].method == "terraform_natural_name"
@@ -61,7 +61,7 @@ def test_sg_misconfig_confidence_is_low(scan_run) -> None:
     достоверный резолв (1.0), этот — эвристический (0.4). Оба уровня
     должны быть зафиксированы, иначе регрессия в одном пройдёт молча.
     """
-    finding = next(f for f in scan_run.findings if f.rule_id == "AVD-AWS-0107")
+    finding = next(f for f in scan_run.findings if f.rule_id == "AWS-0107")
     assert finding.min_confidence == 0.4
     assert finding.resolutions[0].method == "terraform_generated_id_unbridged"
 

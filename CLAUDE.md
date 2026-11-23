@@ -58,6 +58,9 @@ store/ — не технический долг, а следующая функ�
 fixtures/leaky_data_lake/ — эталонный сценарий:
 
 - trivy.json, prowler.json, checkov.json — сырые выводы трёх сканеров
+- Layout = real scanner output: every JSON path also appears in fixtures/leaky_data_lake_real/
+  (list positions collapsed); the one exception is Trivy `Results[].Vulnerabilities`, because
+  the real scan found no CVE (until a real sample has CVEs, runbook O52). Pinned by tests/test_fixture_layout.py.
 - README.md — описание сценария, читай его перед работой с фикстурами
 
 fixtures/leaky_data_lake_real/ — real scanner output (AWS spike run 2, 2026-10-30), sanitised and trimmed; its README says what was replaced and what was kept. Pinned by tests/test_real_fixture.py.
@@ -483,7 +486,7 @@ while it held.
 - CLI: `--store` is orthogonal to `--input`; absent `--store` ⇒ byte-identical to golden baseline.
 - CLI: a recognised scanner file that its parser cannot read stops the run: stderr names the file and the scanner, exit 70 (INTERNAL), nothing is written (no SARIF, no store write). The file is not skipped: a dropped scanner must not look like a clean result. Pinned by tests/test_cli_parse_errors.py.
 - CLI: an input file that is not valid UTF-8 JSON is skipped with the line `not valid JSON` (it is not recognised as scanner output, so skipping it hides no scanner failure); an input file that cannot be read or whose scanner cannot be told apart stops the run: stderr names the file, exit 70 (INTERNAL), nothing is written. JSON nested too deep to parse counts as not valid JSON, and scanner files are read as UTF-8 whatever the locale. Pinned by tests/test_cli_input_files.py.
-- Ingest: Prowler `finding_info.created_time` is epoch seconds (current OCSF output) or an ISO 8601 string (older output, the synthetic fixture); both become an aware UTC `started_at`. Pinned by tests/test_prowler_real_output.py.
+- Ingest: Prowler `finding_info.created_time` is epoch seconds (current OCSF output) or an ISO 8601 string (older output); both become an aware UTC `started_at`. Pinned by tests/test_prowler_real_output.py.
 - Ingest: A severity the scanner did not give is `UNKNOWN`, never INFO: Checkov `null` (open-source Checkov without a platform API key), the Trivy string `UNKNOWN`, OCSF `severity_id` 0 (Unknown) and 99 (Other), and any value ASCC does not recognise; a severity that is neither a string nor null is a format error (exit 70). In SARIF the result is `warning` (the check failed; `none` would say it did not) and the rule carries `ascc/severity: unknown` and no `security-severity`, so no score appears that the scanner never gave. Pinned by tests/test_severity_unknown.py.
 - Ingest: Checkov `resource_address` is null in open-source output; the Terraform address is then taken from `resource` (`resource_address` wins when present). The CLI prints `Findings tied to no resource: N (scanner n, ...)` when any finding resolved to no resource key, and nothing otherwise. Pinned by tests/test_checkov_real_output.py.
 - Ingest: Trivy 0.76 misconfigurations carry `ID` (`AWS-NNNN`) and no `AVDID`; the category lookup ignores the `AVD-` prefix, and `rule_id` stays as the scanner gave it (fingerprints unchanged). Pinned by tests/test_trivy_real_output.py.
@@ -757,7 +760,8 @@ Code: src/ascc/correlate/graph.py. Gate: tests/test_graph.py.
     ["bucket_policy", "permissions_boundary", "rcp", "scp"] (sorted): explicit
     denies in those layers are not in the scanner data, so the edge is an upper
     bound on access, and says so.
-  Source fields are Prowler OCSF `resources[].data`.
+  Source fields are Prowler OCSF `resources[].data` (the flat layout, read
+  until v0.4.0 and removed after it; the fixtures use the nested one, O88).
   Current OCSF (Prowler 5.46) carries the same facts elsewhere, and both
   layouts are read: `data.metadata.security_groups`,
   `data.metadata.instance_profile.Arn`; an inline policy is a resource of its

@@ -78,7 +78,8 @@ def test_prowler_carries_bridging_evidence(fixtures_dir: Path) -> None:
     }
     assert uid_to_name == {
         "arn:aws:s3:::datalake-raw": "datalake-raw",
-        "arn:aws:iam::123456789012:role/datalake-etl-role": "datalake-etl-role",
+        # The inline policy is a resource of its own, uid = the role ARN (O88).
+        "arn:aws:iam::123456789012:role/datalake-etl-role": "datalake-etl-role/datalake-etl-inline",
         "arn:aws:ec2:us-east-1:123456789012:security-group/sg-0f9e8d7c6b5a43210": "datalake-etl-sg",
         "arn:aws:ec2:us-east-1:123456789012:instance/i-0a1b2c3d4e5f67890": "datalake-etl",
     }

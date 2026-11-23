@@ -5,11 +5,13 @@ the category table was keyed by the older `AVD-AWS-NNNN`, so on real output
 every misconfiguration became UNCATEGORIZED without a trace, and the open SSH
 rule (AWS-0107) was not an entry. The lookup now ignores the `AVD-` prefix;
 `rule_id` stays exactly as the scanner gave it, so fingerprints and the golden
-SARIF do not change.
+SARIF do not change. Since O88 the synthetic fixture carries the current form
+too; the older form is checked on a copy of it.
 """
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from ascc.correlate.graph import build_graph
@@ -31,13 +33,25 @@ def test_real_id_without_avdid_finds_its_category() -> None:
     assert _by_rule(REAL)["AWS-0107"].category is Category.NETWORK_EXPOSURE
 
 
-def test_rule_id_is_kept_as_the_scanner_gave_it() -> None:
+def _avd_form(tmp_path: Path) -> Path:
+    """The fixture as older Trivy wrote it: ID and AVDID are "AVD-AWS-NNNN"."""
+    doc = json.loads(SYNTHETIC.read_text(encoding="utf-8"))
+    for result in doc["Results"]:
+        for misconfig in result.get("Misconfigurations") or []:
+            misconfig["ID"] = misconfig["AVDID"] = "AVD-" + misconfig["ID"].removeprefix("AVD-")
+    path = tmp_path / "trivy.json"
+    path.write_text(json.dumps(doc), encoding="utf-8")
+    return path
+
+
+def test_rule_id_is_kept_as_the_scanner_gave_it(tmp_path: Path) -> None:
     assert "AWS-0107" in _by_rule(REAL)
-    assert "AVD-AWS-0107" in _by_rule(SYNTHETIC)
+    assert "AWS-0107" in _by_rule(SYNTHETIC)
+    assert "AVD-AWS-0107" in _by_rule(_avd_form(tmp_path))
 
 
-def test_avdid_form_still_finds_its_category() -> None:
-    findings = _by_rule(SYNTHETIC)
+def test_avdid_form_still_finds_its_category(tmp_path: Path) -> None:
+    findings = _by_rule(_avd_form(tmp_path))
     assert findings["AVD-AWS-0028"].category is Category.ENCRYPTION_AT_REST
     assert findings["AVD-AWS-0107"].category is Category.NETWORK_EXPOSURE
 

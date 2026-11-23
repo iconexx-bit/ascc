@@ -16,6 +16,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
   directory other than `/home/user`. `tests/data/synthetic.sarif.json` now
   uses `/home/user`.
 
+### Changed
+
+- `fixtures/leaky_data_lake/` and its contained copy use the field layout of
+  real scanner output. Prowler: resource attributes and tags sit under
+  `resources[].data.metadata`, the inline policy is a resource of its own,
+  `created_time` is epoch seconds. Trivy: misconfigurations carry `ID`
+  `AWS-NNNN` and no `AVDID`. In the fixture's SARIF the two Trivy
+  misconfigurations change `ruleId` (`trivy/AVD-AWS-0028` -> `trivy/AWS-0028`,
+  `trivy/AVD-AWS-0107` -> `trivy/AWS-0107`) and fingerprint; nothing else
+  changes. Every fixture field exists in `fixtures/leaky_data_lake_real/`,
+  except the Trivy CVE fields (the real scan found no CVE). Checked by
+  `tests/test_fixture_layout.py`.
+
 ### Fixed
 
 - `ascc correlate`: a recognised scanner file that its parser cannot read
