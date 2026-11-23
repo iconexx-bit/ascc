@@ -76,6 +76,9 @@ class Graph:
     nodes: tuple[Node, ...]
     edges: tuple[Edge, ...]
     dropped_edges: int
+    # Instance and inline-policy resources whose edge fields are absent in
+    # both layouts: an edge the graph could not even look for.
+    unread_edge_sources: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -142,8 +145,10 @@ def build_graph(run: CorrelationRun) -> Graph:
 
     edges: dict[tuple[str, str, str, str], Edge] = {}
     dropped = 0
+    unread: set[str] = set()
     for scan in run.scan_runs:
         for finding in scan.findings:
+            unread.update(_unread_sources(finding))
             for edge in _edges_from(finding, scan.scanner, node_of, nodes):
                 if edge is None:
                     dropped += 1
@@ -152,7 +157,12 @@ def build_graph(run: CorrelationRun) -> Graph:
                 if ident not in edges or edge.evidence < edges[ident].evidence:
                     edges[ident] = edge
     ordered = tuple(edges[k] for k in sorted(edges))
-    return Graph(nodes=tuple(nodes.values()), edges=ordered, dropped_edges=dropped)
+    return Graph(
+        nodes=tuple(nodes.values()),
+        edges=ordered,
+        dropped_edges=dropped,
+        unread_edge_sources=len(unread),
+    )
 
 
 def _account(raw: dict) -> str | None:
@@ -205,8 +215,9 @@ def _edges_from(
         src = nodes.get(node_of.get(src_key)) if src_key else None
         if src is None:
             continue
+        metadata = _metadata(data)
 
-        for sg_id in data.get("security_groups") or ():
+        for sg_id in data.get("security_groups") or metadata.get("security_groups") or ():
             sg = _find(nodes, "ec2", "security-group", str(sg_id))
             yield (
                 _edge(
@@ -222,13 +233,65 @@ def _edges_from(
             )
 
         profile_arn = data.get("iam_instance_profile_arn")
+        profile = metadata.get("instance_profile")
+        if profile_arn is None and isinstance(profile, dict):
+            profile_arn = profile.get("Arn")
         if isinstance(profile_arn, str):
             yield _assumes(src, profile_arn, scanner, nodes)
 
-        if data.get("inline_policy_actions") == ["*"] and data.get("inline_policy_resources") == [
-            "*"
-        ]:
+        flat_wildcard = data.get("inline_policy_actions") == ["*"] and data.get(
+            "inline_policy_resources"
+        ) == ["*"]
+        # Current OCSF: an inline policy is its own resource whose uid is the
+        # role's ARN. A managed policy (AdministratorAccess) draws no edge (O49).
+        inline_wildcard = metadata.get("type") == "Inline" and _allows_all(metadata.get("document"))
+        if flat_wildcard or inline_wildcard:
             yield from _wildcard(src, uid, scanner, nodes)
+
+
+def _metadata(data: dict) -> dict:
+    metadata = data.get("metadata")
+    return metadata if isinstance(metadata, dict) else {}
+
+
+def _allows_all(document: object) -> bool:
+    """An Allow statement with Action "*" and Resource "*" (string or list)."""
+    if not isinstance(document, dict):
+        return False
+    statements = document.get("Statement")
+    if isinstance(statements, dict):
+        statements = [statements]
+    return any(
+        isinstance(s, dict)
+        and s.get("Effect") == "Allow"
+        and s.get("Action") in ("*", ["*"])
+        and s.get("Resource") in ("*", ["*"])
+        for s in statements or ()
+    )
+
+
+def _unread_sources(finding) -> set[str]:
+    """uids of instance and inline-policy resources that carry no edge field
+    in either layout (CLAUDE.md, "Graph and chains (A2)")."""
+    raw = finding.raw if isinstance(finding.raw, dict) else {}
+    unread: set[str] = set()
+    for res in raw.get("resources") or ():
+        if not isinstance(res, dict) or not isinstance(res.get("uid"), str):
+            continue
+        data = res.get("data") if isinstance(res.get("data"), dict) else {}
+        metadata = _metadata(data)
+        if res.get("type") == "AwsEc2Instance" and ":instance/" in res["uid"]:
+            flat = ("security_groups", "iam_instance_profile_arn")
+            nested = ("security_groups", "instance_profile")
+            if not any(k in data for k in flat) and not any(k in metadata for k in nested):
+                unread.add(res["uid"])
+        if (
+            res.get("type") == "AwsIamPolicy"
+            and metadata.get("type") == "Inline"
+            and not isinstance(metadata.get("document"), dict)
+        ):
+            unread.add(res["uid"])
+    return unread
 
 
 def _assumes(

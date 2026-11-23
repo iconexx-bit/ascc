@@ -33,11 +33,10 @@ none. Checkov's `null` severity is reported as unknown. Its
 `resource_address` is empty, so the Terraform address comes from `resource`:
 11 of 22 real Checkov findings resolve to a resource; the rest sit on
 Terraform types ASCC does not map yet, and the CLI counts them. The graph
-found none of the Prowler resource attributes it builds edges from and
-drew no edges. The demo shows what ASCC does with input laid out like this
-fixture, not yet what it does with current scanner output. A graph that reads
-real output is planned for v0.4.0; this section goes away when a test pins
-every fixture field to real output.
+reads both layouts: on the real output it finds one chain, security group ->
+instance -> role -> bucket, 3 hops, confidence 0.6; the role's `*/*` inline
+policy also draws 21 `can_access` edges, an upper bound on access. This
+section goes away when a test pins every fixture field to real output.
 
 ## Scenario
 

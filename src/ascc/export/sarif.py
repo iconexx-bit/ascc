@@ -202,6 +202,9 @@ def _graph_stats(graph: Graph, chains: tuple[Chain, ...]) -> dict:
         "dropped_edges": graph.dropped_edges,
         "edges_by_kind": dict(sorted(by_kind.items())),
     }
+    if graph.unread_edge_sources:
+        # Edge fields absent in every known layout: said, not silent (O47).
+        stats["unread_edge_sources"] = graph.unread_edge_sources
     items = [item for node in graph.nodes for item in node.evidence]
     if items:
         # Evidence on a node no chain reaches is still counted, never dropped silently.
