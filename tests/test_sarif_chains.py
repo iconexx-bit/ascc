@@ -83,7 +83,7 @@ def test_nodes_show_why_they_are_entry_and_target(fixture_props: dict) -> None:
     nodes = {n["key"]: n for n in chain["nodes"]}
     assert nodes[SG]["entry_findings"] == [
         "prowler:ec2_securitygroup_allow_ingress_from_internet_to_port_22",
-        "trivy:AVD-AWS-0107",
+        "trivy:AWS-0107",
     ]
     assert nodes[BUCKET]["data_classification"] == "PII"
     assert "data_classification" not in nodes[SG]

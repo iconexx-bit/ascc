@@ -23,9 +23,11 @@ from ascc.schema.identity import IdentityClass, MatchKey, Resolution
 from ascc.schema.models import Finding, Resource, ScanRun
 from ascc.schema.taxonomy import Category, Severity
 
-# sha256 of runs[0].results of tests/data/leaky_data_lake.sarif.json at ff36192
-# (before chain links), canonical JSON: sort_keys, no spaces, ensure_ascii=False.
-RESULTS_BEFORE_LINKS = "dcba6e604eb790601c6e4b87d8bd1f85114116d69de818ce2618e7016b6a19f5"
+# sha256 of the fixture's runs[0].results with chain links removed, after O88 moved
+# the fixture to the real scanner layout (Trivy IDs AWS-NNNN); canonical JSON:
+# sort_keys, no spaces, ensure_ascii=False. Before O88 (ff36192):
+# dcba6e604eb790601c6e4b87d8bd1f85114116d69de818ce2618e7016b6a19f5.
+RESULTS_BEFORE_LINKS = "3cd3cffb9a6578973d05206ccb576ed647252a9c0ce095113d13dc889f921227"
 UNRELATED = MatchKey("aws", "s3", "bucket", "unrelated-logs")
 
 
