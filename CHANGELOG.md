@@ -28,6 +28,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
   changes. Every fixture field exists in `fixtures/leaky_data_lake_real/`,
   except the Trivy CVE fields (the real scan found no CVE). Checked by
   `tests/test_fixture_layout.py`.
+- Graph: a `*/*` inline policy draws `can_access` only from an IAM role or
+  user and only to a data store (an S3 bucket), not to every node of the run.
+  On the real output the role's 21 edges become 3; on the fixture 3 become 1
+  and every edge of the graph is on the chain; the chain is unchanged. A
+  `*/*` policy on anything that is not a principal draws no edge and is
+  counted in `graph_stats.non_principal_wildcards`. In the fixture's SARIF
+  only `graph_stats` changes. Checked by `tests/test_graph_can_access.py`.
 
 ### Fixed
 

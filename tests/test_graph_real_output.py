@@ -34,7 +34,7 @@ ENTRY_IDS = (
     "ec2_instance_port_ssh_exposed_to_internet",
     "ec2_securitygroup_allow_ingress_from_internet_to_tcp_port_22",
 )
-CAN_ACCESS = 21  # role -> every node of the run: an upper bound, see O49
+CAN_ACCESS = 3  # role -> the bucket nodes only: data stores (O49)
 
 
 def _run(prowler: Path = REAL / "prowler.json") -> CorrelationRun:
@@ -131,8 +131,8 @@ def test_fixture_readme_states_the_real_chain() -> None:
     text = " ".join(readme.read_text(encoding="utf-8").split())
     assert (
         "on the real output it finds one chain, security group -> instance -> role -> "
-        "bucket, 3 hops, confidence 0.6; the role's `*/*` inline policy also draws "
-        f"{CAN_ACCESS} `can_access` edges"
+        "bucket, 3 hops, confidence 0.6; the role's `*/*` inline policy draws "
+        f"{CAN_ACCESS} `can_access` edges, one per bucket node"
     ) in text
 
 

@@ -37,6 +37,11 @@ EDGE_CONFIDENCE: Mapping[str, float] = MappingProxyType(
     }
 )
 UNOBSERVED_LAYERS: tuple[str, ...] = ("bucket_policy", "permissions_boundary", "rcp", "scp")
+# A wildcard policy reaches only nodes where data lives, and only a principal
+# holds one (CLAUDE.md, "Graph and chains (A2)"; runbook O49). A node counts
+# when any member is of one of these (service, resource_type) pairs.
+DATA_STORE_TYPES: frozenset[tuple[str, str]] = frozenset({("s3", "bucket")})
+PRINCIPAL_TYPES: frozenset[tuple[str, str]] = frozenset({("iam", "role"), ("iam", "user")})
 TARGET_TAG = "DataClassification"
 
 
@@ -79,6 +84,14 @@ class Graph:
     # Instance and inline-policy resources whose edge fields are absent in
     # both layouts: an edge the graph could not even look for.
     unread_edge_sources: int = 0
+    # Resources with a `*/*` policy that are not a principal: no edge is drawn
+    # from them, and the count says so.
+    non_principal_wildcards: int = 0
+
+
+@dataclass(frozen=True, slots=True)
+class _NonPrincipal:
+    uid: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -146,12 +159,16 @@ def build_graph(run: CorrelationRun) -> Graph:
     edges: dict[tuple[str, str, str, str], Edge] = {}
     dropped = 0
     unread: set[str] = set()
+    non_principal: set[str] = set()
     for scan in run.scan_runs:
         for finding in scan.findings:
             unread.update(_unread_sources(finding))
             for edge in _edges_from(finding, scan.scanner, node_of, nodes):
                 if edge is None:
                     dropped += 1
+                    continue
+                if isinstance(edge, _NonPrincipal):
+                    non_principal.add(edge.uid)
                     continue
                 ident = (str(edge.src), edge.kind, str(edge.dst), edge.method)
                 if ident not in edges or edge.evidence < edges[ident].evidence:
@@ -162,6 +179,7 @@ def build_graph(run: CorrelationRun) -> Graph:
         edges=ordered,
         dropped_edges=dropped,
         unread_edge_sources=len(unread),
+        non_principal_wildcards=len(non_principal),
     )
 
 
@@ -190,6 +208,10 @@ def _resolve_arn(value: str, scanner: str) -> MatchKey | None:
     return resolution.key if resolution else None
 
 
+def _is_any(node: Node, types: frozenset[tuple[str, str]]) -> bool:
+    return any((key.service, key.resource_type) in types for key in node.members)
+
+
 def _find(nodes: Mapping[MatchKey, Node], service: str, rtype: str, ident: str) -> Node | None:
     ident = ident.strip().lower().replace("_", "-")
     for node in nodes.values():
@@ -201,8 +223,9 @@ def _find(nodes: Mapping[MatchKey, Node], service: str, rtype: str, ident: str) 
 
 def _edges_from(
     finding, scanner: str, node_of: Mapping[MatchKey, MatchKey], nodes: Mapping[MatchKey, Node]
-) -> Iterator[Edge | None]:
-    """Yield an Edge per resolvable reference and None per dropped one."""
+) -> Iterator[Edge | _NonPrincipal | None]:
+    """Yield an Edge per resolvable reference, None per dropped one and a
+    _NonPrincipal per `*/*` policy held by something that is not a principal."""
     raw = finding.raw if isinstance(finding.raw, dict) else {}
     for res in raw.get("resources") or ():
         if not isinstance(res, dict) or not isinstance(res.get("uid"), str):
@@ -246,7 +269,10 @@ def _edges_from(
         # role's ARN. A managed policy (AdministratorAccess) draws no edge (O49).
         inline_wildcard = metadata.get("type") == "Inline" and _allows_all(metadata.get("document"))
         if flat_wildcard or inline_wildcard:
-            yield from _wildcard(src, uid, scanner, nodes)
+            if _is_any(src, PRINCIPAL_TYPES):
+                yield from _wildcard(src, uid, scanner, nodes)
+            else:
+                yield _NonPrincipal(uid)
 
 
 def _metadata(data: dict) -> dict:
@@ -309,7 +335,7 @@ def _assumes(
 
 def _wildcard(src: Node, uid: str, scanner: str, nodes: Mapping[MatchKey, Node]) -> Iterator[Edge]:
     for node in nodes.values():
-        if node.key == src.key:
+        if node.key == src.key or not _is_any(node, DATA_STORE_TYPES):
             continue
         if node.accounts and src.accounts and not (node.accounts & src.accounts):
             continue

@@ -752,10 +752,17 @@ Code: src/ascc/correlate/graph.py. Gate: tests/test_graph.py.
     account other than the profile ARN's account gets no edge. Heuristic: the
     AWS console names a role's instance profile after the role, Terraform does
     not; 0.6 says exactly that.
-  - can_access: role -> every other node; method policy_wildcard; confidence
+  - can_access: principal -> data store; method policy_wildcard; confidence
     1.0; source: `inline_policy_actions == ["*"]` and
-    `inline_policy_resources == ["*"]`. A node with a known account that does
-    not match the role's gets no edge. Properties: account_match ("same" |
+    `inline_policy_resources == ["*"]`. A principal is a node with a member
+    in graph.PRINCIPAL_TYPES: `iam:role`, `iam:user`. A data store is a node
+    with a member in graph.DATA_STORE_TYPES: `s3:bucket`. `*/*` says what a
+    principal may do; the graph asks which data it reaches, so no edge goes to
+    a security group, an instance or a policy (runbook O49). A `*/*` policy on
+    a node that is not a principal draws no edge and is counted in
+    graph_stats.non_principal_wildcards (number of such resources; emitted
+    only when > 0). A node with a known account that does not match the
+    role's gets no edge. Properties: account_match ("same" |
     "unverified"), deny_check = "not_observed", unobserved_layers =
     ["bucket_policy", "permissions_boundary", "rcp", "scp"] (sorted): explicit
     denies in those layers are not in the scanner data, so the edge is an upper
@@ -772,7 +779,8 @@ Code: src/ascc/correlate/graph.py. Gate: tests/test_graph.py.
   `resources[].tags` or `data.metadata.tags` ([{Key, Value}]).
   graph_stats.unread_edge_sources counts instance and inline-policy resources
   whose edge fields are absent in both layouts; emitted only when > 0.
-  Pinned by tests/test_graph_real_output.py.
+  Pinned by tests/test_graph_real_output.py and
+  tests/test_graph_can_access.py.
 - Relation confidences live in graph.EDGE_CONFIDENCE; identity confidences in
   store.policy.MAX_CONFIDENCE. One document, two code tables, never mixed:
   identity says "A and B are one resource", relation says "A leads to B".

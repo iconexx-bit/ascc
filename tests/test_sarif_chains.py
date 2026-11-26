@@ -95,16 +95,16 @@ def test_nodes_show_why_they_are_entry_and_target(fixture_props: dict) -> None:
 
 
 def test_graph_stats_count_the_whole_graph(fixture_props: dict) -> None:
-    # The wildcard role reaches every same-account node (3 can_access edges);
-    # only the one on the chain is exported, the totals say what was left out.
+    # The wildcard role reaches data stores only: the bucket, not the security
+    # group or the instance (O49). Every edge of this graph is on the chain.
     assert fixture_props["graph_stats"] == {
         "nodes": 4,
-        "edges": 5,
+        "edges": 3,
         "dropped_edges": 0,
-        "edges_by_kind": {"assumes": 1, "can_access": 3, "exposes": 1},
+        "edges_by_kind": {"assumes": 1, "can_access": 1, "exposes": 1},
     }
     exported = sum(len(c["edges"]) for c in fixture_props["chains"])
-    assert exported == 3 < fixture_props["graph_stats"]["edges"]
+    assert exported == 3 == fixture_props["graph_stats"]["edges"]
 
 
 def test_without_prowler_chains_empty_and_stats_present(fixtures_dir: Path) -> None:
