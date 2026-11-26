@@ -58,6 +58,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
   seconds, is read; it stopped every run with exit 70 (`TypeError`). The ISO
   8601 string of older output still works; both give an aware UTC start time.
   Checked by `tests/test_prowler_real_output.py`.
+- Prowler: a check of an account-wide setting (S3 Block Public Access, EBS
+  default encryption, IMDSv2 default, root user, password policy) was read as
+  a bucket, an instance or an untyped resource, and its `name`, the account
+  ID, as a second identifier observed with it. On the real output that joined
+  two pairs of keys that are not one resource and made `aws:s3:bucket:account`
+  a bucket the `*/*` role "can access". Such a check now sits on
+  `aws:<service>:account:<account ID>`; a name equal to the account ID draws no
+  bridge fact. Real output: 5 clusters become the 3 that join a role with its
+  path; `can_access` edges 3 become 2; the chain is unchanged. The fixtures
+  have no account-wide check: their SARIF does not change.
+  Checked by `tests/test_prowler_account_scope.py`.
 - Severity the scanner did not give: open-source Checkov output
   (`severity: null`) stopped every run with exit 70 (`AttributeError`); the
   Trivy string `UNKNOWN` and OCSF `severity_id` 0 became INFO. All of them,
