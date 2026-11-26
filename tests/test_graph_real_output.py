@@ -34,7 +34,7 @@ ENTRY_IDS = (
     "ec2_instance_port_ssh_exposed_to_internet",
     "ec2_securitygroup_allow_ingress_from_internet_to_tcp_port_22",
 )
-CAN_ACCESS = 3  # role -> the bucket nodes only: data stores (O49)
+CAN_ACCESS = 2  # role -> the two bucket nodes (O49); the account is no bucket (O50)
 
 
 def _run(prowler: Path = REAL / "prowler.json") -> CorrelationRun:
