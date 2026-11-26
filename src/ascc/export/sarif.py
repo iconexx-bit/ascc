@@ -205,6 +205,9 @@ def _graph_stats(graph: Graph, chains: tuple[Chain, ...]) -> dict:
     if graph.unread_edge_sources:
         # Edge fields absent in every known layout: said, not silent (O47).
         stats["unread_edge_sources"] = graph.unread_edge_sources
+    if graph.non_principal_wildcards:
+        # A `*/*` policy on something that is not a principal draws no edge (O49).
+        stats["non_principal_wildcards"] = graph.non_principal_wildcards
     items = [item for node in graph.nodes for item in node.evidence]
     if items:
         # Evidence on a node no chain reaches is still counted, never dropped silently.

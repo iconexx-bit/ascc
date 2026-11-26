@@ -27,7 +27,10 @@ none. Checkov's `null` severity is reported as unknown. Its
 Terraform types ASCC does not map yet, and the CLI counts them. The graph
 reads both layouts: on the real output it finds one chain, security group ->
 instance -> role -> bucket, 3 hops, confidence 0.6; the role's `*/*` inline
-policy also draws 21 `can_access` edges, an upper bound on access.
+policy draws 3 `can_access` edges, one per bucket node, an upper bound on
+access. One of those nodes, `aws:s3:bucket:account`, stands for an
+account-level Prowler check, not a bucket; ASCC does not tell the two apart
+yet.
 
 ## Scenario
 

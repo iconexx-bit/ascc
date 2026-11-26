@@ -213,10 +213,10 @@
         ],
         "graph_stats": {
           "dropped_edges": 0,
-          "edges": 5,
+          "edges": 3,
           "edges_by_kind": {
             "assumes": 1,
-            "can_access": 3,
+            "can_access": 1,
             "exposes": 1
           },
           "evidence": {
