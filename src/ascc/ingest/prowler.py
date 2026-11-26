@@ -4,7 +4,15 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
-from ascc.schema.identity import RefScheme, Resolution, ResourceRef, resolve
+from ascc.schema.identity import (
+    ARN_RE,
+    IdentityClass,
+    MatchKey,
+    RefScheme,
+    Resolution,
+    ResourceRef,
+    resolve,
+)
 from ascc.schema.models import BridgeFact, Finding, Resource, ScanRun
 from ascc.schema.taxonomy import Category, Severity
 
@@ -39,6 +47,40 @@ def _parse_timestamp(raw: float | str) -> datetime:
     if isinstance(raw, int | float):
         return datetime.fromtimestamp(raw, tz=UTC)
     return datetime.fromisoformat(raw)
+
+
+def _account_of(entry: dict) -> str | None:
+    cloud = entry.get("cloud")
+    account = cloud.get("account") if isinstance(cloud, dict) else None
+    uid = account.get("uid") if isinstance(account, dict) else None
+    return uid if isinstance(uid, str) and uid else None
+
+
+def _account_scope(uid: str, name: object) -> Resolution | None:
+    """A check of an account-wide setting names the account, not a resource.
+
+    Prowler gives such a check a pseudo-ARN in the account (`...:account`,
+    `...:root`, `...:password-policy`, a bare `...:volume`) and the account ID
+    as the name. An ARN with an account ID whose resource part has no "/" and
+    no ":", and that is `account` or `root` or carries that account ID as its
+    name, resolves to aws:<service>:account:<account ID of the ARN>
+    (CLAUDE.md, "Contracts"; runbook O50). An SNS topic or an S3 bucket keeps
+    its type.
+    """
+    m = ARN_RE.match(uid)
+    if m is None or not m["account"]:
+        return None
+    tail = m["tail"]
+    if "/" in tail or ":" in tail:
+        return None
+    if tail not in ("account", "root") and name != m["account"]:
+        return None
+    return Resolution(
+        key=MatchKey(m["partition"] or "aws", m["service"], "account", m["account"]),
+        confidence=1.0,
+        method="arn_parse",
+        identity_class=IdentityClass.NATURAL_NAME,
+    )
 
 
 def _tags_dict(tags: list[dict[str, str]]) -> dict[str, str]:
@@ -100,19 +142,22 @@ class ProwlerParser(ScannerParser):
         self, entry: dict, resources: dict[str, Resource], bridge_facts: list[BridgeFact]
     ) -> Finding:
         rule_id = entry["metadata"]["event_code"]
+        account = _account_of(entry)
         resource_ids: list[str] = []
         resolutions: list[Resolution] = []
         for resource_data in entry["resources"]:
             ref = ResourceRef(
                 scheme=RefScheme.ARN, value=resource_data["uid"], scanner=self.scanner_name
             )
-            resolution = resolve(ref)
+            resolution = _account_scope(resource_data["uid"], resource_data.get("name"))
+            if resolution is None:
+                resolution = resolve(ref)
             if resolution is None:
                 continue
             resource_ids.append(str(resolution.key))
             resolutions.append(resolution)
             self._record_resource(resources, resolution, ref, resource_data)
-            self._record_bridge_fact(bridge_facts, resolution, resource_data)
+            self._record_bridge_fact(bridge_facts, resolution, resource_data, account)
         return Finding(
             scanner=self.scanner_name,
             rule_id=rule_id,
@@ -152,6 +197,7 @@ class ProwlerParser(ScannerParser):
         bridge_facts: list[BridgeFact],
         uid_resolution: Resolution,
         resource_data: dict,
+        account: str | None = None,
     ) -> None:
         """uid и name наблюдены Prowler в одной записи resources[] — это
         свидетельство, что оба идентификатора называют один ресурс.
@@ -166,6 +212,10 @@ class ProwlerParser(ScannerParser):
         name = resource_data.get("name")
         tf_type = _PROWLER_TYPE_TO_TF_TYPE.get(resource_data.get("type", ""))
         if not name or tf_type is None:
+            return
+        if name == account:
+            # Account-wide checks carry the account ID as the name: it names
+            # the account, not a second identifier of the resource (O50).
             return
         name_ref = ResourceRef(
             scheme=RefScheme.TERRAFORM, value=f"{tf_type}.{name}", scanner=self.scanner_name
